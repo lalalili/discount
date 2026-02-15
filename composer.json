@@ -7,9 +7,16 @@
     "require": {
         "php": "^8.4"
     },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "phpstan/phpstan": "^2.1"
+    },
     "autoload": {
         "psr-4": {
             "Cptw\\DiscountKernel\\": "src/"
         }
+    },
+    "scripts": {
+        "analyse": "phpstan analyse --configuration=phpstan.neon.dist --no-progress"
     }
 }

@@ -66,7 +66,7 @@ final class DefaultDiscountEngine implements DiscountEngineInterface
             static fn (PromotionContext $a, PromotionContext $b): int => ($a->sort ?? PHP_INT_MAX) <=> ($b->sort ?? PHP_INT_MAX)
         );
 
-        return $candidates[0] ?? null;
+        return $candidates[0];
     }
 
     /**
