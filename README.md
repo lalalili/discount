@@ -22,6 +22,11 @@ Out of scope (must stay in app adapters):
 
 - PHP `^8.4`
 
+## Version compatibility
+
+- `1.x` targets Laravel `12.x` application adapters.
+- Runtime logic is framework-agnostic; Laravel binding is handled by host projects.
+
 ## Install
 
 ### Option A: Path repository (same monorepo)
