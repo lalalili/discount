@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Cptw\DiscountKernel\Contracts;
+namespace Discount\Kernel\Contracts;
 
-use Cptw\DiscountKernel\Contexts\CartContext;
-use Cptw\DiscountKernel\Contexts\PromotionSet;
-use Cptw\DiscountKernel\DTOs\CartAdjustmentResult;
+use Discount\Kernel\Contexts\CartContext;
+use Discount\Kernel\Contexts\PromotionSet;
+use Discount\Kernel\DTOs\CartAdjustmentResult;
 
 interface CartPromotionEngineInterface
 {

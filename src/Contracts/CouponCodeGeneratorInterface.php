@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Cptw\DiscountKernel\Contracts;
+namespace Discount\Kernel\Contracts;
 
-use Cptw\DiscountKernel\Contexts\CodeContext;
+use Discount\Kernel\Contexts\CodeContext;
 
 interface CouponCodeGeneratorInterface
 {

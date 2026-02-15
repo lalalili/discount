@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Cptw\DiscountKernel\DTOs;
+namespace Discount\Kernel\DTOs;
 
 final class PriceResult
 {

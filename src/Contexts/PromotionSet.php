@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Cptw\DiscountKernel\Contexts;
+namespace Discount\Kernel\Contexts;
 
 final class PromotionSet
 {

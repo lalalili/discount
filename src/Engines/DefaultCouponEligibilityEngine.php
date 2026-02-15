@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Cptw\DiscountKernel\Engines;
+namespace Discount\Kernel\Engines;
 
-use Cptw\DiscountKernel\Contexts\CartContext;
-use Cptw\DiscountKernel\Contexts\CouponContext;
-use Cptw\DiscountKernel\Contexts\UserContext;
-use Cptw\DiscountKernel\Contracts\CouponEligibilityInterface;
-use Cptw\DiscountKernel\DTOs\EligibilityResult;
+use Discount\Kernel\Contexts\CartContext;
+use Discount\Kernel\Contexts\CouponContext;
+use Discount\Kernel\Contexts\UserContext;
+use Discount\Kernel\Contracts\CouponEligibilityInterface;
+use Discount\Kernel\DTOs\EligibilityResult;
+use Discount\Kernel\Support\DiscountConfig;
 
 final class DefaultCouponEligibilityEngine implements CouponEligibilityInterface
 {
@@ -36,12 +37,23 @@ final class DefaultCouponEligibilityEngine implements CouponEligibilityInterface
      */
     private function resolveScopeAmountAndFallback(int $scope, CartContext $cart): array
     {
+        $scopeMap = DiscountConfig::get('coupon.scope_map', []);
+
+        if (! is_array($scopeMap)) {
+            $scopeMap = [];
+        }
+
+        $allScope = (int) ($scopeMap['all'] ?? 0);
+        $bookScope = (int) ($scopeMap['book'] ?? 1);
+        $ebookScope = (int) ($scopeMap['ebook'] ?? 2);
+        $specificScope = (int) ($scopeMap['specific_products'] ?? 3);
+
         return match ($scope) {
-            0       => [$cart->allAmount, true],
-            1       => [$cart->bookAmount, $cart->hasBook],
-            2       => [$cart->ebookAmount, $cart->hasEbook],
-            3       => [$cart->specificProductsAmount, $cart->hasSpecificProducts],
-            default => [0.0, false],
+            $allScope      => [$cart->allAmount, true],
+            $bookScope     => [$cart->bookAmount, $cart->hasBook],
+            $ebookScope    => [$cart->ebookAmount, $cart->hasEbook],
+            $specificScope => [$cart->specificProductsAmount, $cart->hasSpecificProducts],
+            default        => [0.0, false],
         };
     }
 }

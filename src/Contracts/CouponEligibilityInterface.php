@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Cptw\DiscountKernel\Contracts;
+namespace Discount\Kernel\Contracts;
 
-use Cptw\DiscountKernel\Contexts\CartContext;
-use Cptw\DiscountKernel\Contexts\CouponContext;
-use Cptw\DiscountKernel\Contexts\UserContext;
-use Cptw\DiscountKernel\DTOs\EligibilityResult;
+use Discount\Kernel\Contexts\CartContext;
+use Discount\Kernel\Contexts\CouponContext;
+use Discount\Kernel\Contexts\UserContext;
+use Discount\Kernel\DTOs\EligibilityResult;
 
 interface CouponEligibilityInterface
 {

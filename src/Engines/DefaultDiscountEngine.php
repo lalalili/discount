@@ -2,46 +2,74 @@
 
 declare(strict_types=1);
 
-namespace Cptw\DiscountKernel\Engines;
+namespace Discount\Kernel\Engines;
 
-use Cptw\DiscountKernel\Contexts\ProductContext;
-use Cptw\DiscountKernel\Contexts\PromotionContext;
-use Cptw\DiscountKernel\Contexts\PromotionSet;
-use Cptw\DiscountKernel\Contracts\DiscountEngineInterface;
-use Cptw\DiscountKernel\DTOs\PriceResult;
+use Discount\Kernel\Contexts\ProductContext;
+use Discount\Kernel\Contexts\PromotionContext;
+use Discount\Kernel\Contexts\PromotionSet;
+use Discount\Kernel\Contracts\DiscountEngineInterface;
+use Discount\Kernel\DTOs\PriceResult;
+use Discount\Kernel\Support\DiscountConfig;
 
 final class DefaultDiscountEngine implements DiscountEngineInterface
 {
     public function price(ProductContext $product, PromotionSet $promotions): PriceResult
     {
         $price = $product->listPrice;
+        $groupedPromotions = $this->groupByRole($promotions->promotions);
 
-        $type8 = $this->firstByType($promotions->promotions, 8);
-        if ($type8 instanceof PromotionContext) {
-            $candidate = (float) ($type8->discountAmount ?? 0);
+        foreach ($this->pricingPriorities() as $role) {
+            $rolePromotions = $groupedPromotions[$role] ?? [];
 
-            return new PriceResult($candidate > 0 ? $candidate : $price);
-        }
+            if ($rolePromotions === []) {
+                continue;
+            }
 
-        $type7 = $this->firstByType($promotions->promotions, 7);
-        if ($type7 instanceof PromotionContext) {
-            return new PriceResult($this->applyDiscountValue($price, $type7->discountAmount));
-        }
+            if ($role === 'exclusive_price') {
+                $promotion = $this->firstSorted($rolePromotions);
+                if ($promotion instanceof PromotionContext) {
+                    $candidate = (float) ($promotion->discountAmount ?? 0);
 
-        $type6 = $this->firstByType($promotions->promotions, 6);
-        if ($type6 instanceof PromotionContext) {
-            $value = $type6->rebateGetAmount ?? $type6->discountAmount;
+                    return new PriceResult($candidate > 0 ? $candidate : $price);
+                }
 
-            return new PriceResult($this->applyDiscountValue($price, $value));
-        }
+                continue;
+            }
 
-        $type1 = $this->firstByType($promotions->promotions, 1);
-        if ($type1 instanceof PromotionContext) {
-            return new PriceResult($this->applyDiscountValue($price, $type1->discountAmount));
-        }
+            if ($role === 'exclusive_discount') {
+                $promotion = $this->firstSorted($rolePromotions);
+                if ($promotion instanceof PromotionContext) {
+                    return new PriceResult($this->applyDiscountValue($price, $promotion->discountAmount));
+                }
 
-        foreach ($this->allByType($promotions->promotions, 2) as $promotion) {
-            $price = $this->applyDiscountValue($price, $promotion->discountAmount);
+                continue;
+            }
+
+            if ($role === 'group_rebate') {
+                $promotion = $this->firstSorted($rolePromotions);
+                if ($promotion instanceof PromotionContext) {
+                    $value = $promotion->rebateGetAmount ?? $promotion->discountAmount;
+
+                    return new PriceResult($this->applyDiscountValue($price, $value));
+                }
+
+                continue;
+            }
+
+            if ($role === 'single_discount') {
+                $promotion = $this->firstSorted($rolePromotions);
+                if ($promotion instanceof PromotionContext) {
+                    return new PriceResult($this->applyDiscountValue($price, $promotion->discountAmount));
+                }
+
+                continue;
+            }
+
+            if ($role === 'stackable_discount') {
+                foreach ($this->sortPromotions($rolePromotions) as $promotion) {
+                    $price = $this->applyDiscountValue($price, $promotion->discountAmount);
+                }
+            }
         }
 
         return new PriceResult($price);
@@ -49,36 +77,92 @@ final class DefaultDiscountEngine implements DiscountEngineInterface
 
     /**
      * @param list<PromotionContext> $promotions
+     * @return array<string, list<PromotionContext>>
      */
-    private function firstByType(array $promotions, int $type): ?PromotionContext
+    private function groupByRole(array $promotions): array
     {
-        $candidates = array_values(array_filter(
-            $promotions,
-            static fn (PromotionContext $promotion): bool => $promotion->type === $type
-        ));
+        $grouped = [];
 
-        if ($candidates === []) {
+        foreach ($promotions as $promotion) {
+            $role = $this->resolveRole($promotion->type);
+
+            if ($role === null || $role === '') {
+                continue;
+            }
+
+            $grouped[$role] ??= [];
+            $grouped[$role][] = $promotion;
+        }
+
+        return $grouped;
+    }
+
+    private function resolveRole(int $type): ?string
+    {
+        $typeRoleMap = DiscountConfig::get('event.type_role_map', []);
+
+        if (! is_array($typeRoleMap)) {
             return null;
         }
 
-        usort(
-            $candidates,
-            static fn (PromotionContext $a, PromotionContext $b): int => ($a->sort ?? PHP_INT_MAX) <=> ($b->sort ?? PHP_INT_MAX)
-        );
+        if (array_key_exists($type, $typeRoleMap) && is_string($typeRoleMap[$type])) {
+            return $typeRoleMap[$type];
+        }
 
-        return $candidates[0];
+        $stringType = (string) $type;
+
+        if (array_key_exists($stringType, $typeRoleMap) && is_string($typeRoleMap[$stringType])) {
+            return $typeRoleMap[$stringType];
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function pricingPriorities(): array
+    {
+        $priorities = DiscountConfig::get('event.priorities.pricing', []);
+
+        if (! is_array($priorities) || $priorities === []) {
+            return [
+                'exclusive_price',
+                'exclusive_discount',
+                'group_rebate',
+                'single_discount',
+                'stackable_discount',
+            ];
+        }
+
+        return array_values(array_filter(
+            $priorities,
+            static fn (mixed $priority): bool => is_string($priority) && $priority !== ''
+        ));
+    }
+
+    /**
+     * @param list<PromotionContext> $promotions
+     */
+    private function firstSorted(array $promotions): ?PromotionContext
+    {
+        $sorted = $this->sortPromotions($promotions);
+
+        return $sorted[0] ?? null;
     }
 
     /**
      * @param list<PromotionContext> $promotions
      * @return list<PromotionContext>
      */
-    private function allByType(array $promotions, int $type): array
+    private function sortPromotions(array $promotions): array
     {
-        return array_values(array_filter(
+        usort(
             $promotions,
-            static fn (PromotionContext $promotion): bool => $promotion->type === $type
-        ));
+            static fn (PromotionContext $a, PromotionContext $b): int => ($a->sort ?? PHP_INT_MAX) <=> ($b->sort ?? PHP_INT_MAX)
+        );
+
+        return $promotions;
     }
 
     private function applyDiscountValue(float $price, float|int|null $value): float

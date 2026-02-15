@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Cptw\DiscountKernel\Contracts;
+namespace Discount\Kernel\Contracts;
 
-use Cptw\DiscountKernel\Contexts\ProductContext;
-use Cptw\DiscountKernel\Contexts\PromotionSet;
-use Cptw\DiscountKernel\DTOs\PriceResult;
+use Discount\Kernel\Contexts\ProductContext;
+use Discount\Kernel\Contexts\PromotionSet;
+use Discount\Kernel\DTOs\PriceResult;
 
 interface DiscountEngineInterface
 {

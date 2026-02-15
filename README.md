@@ -1,35 +1,31 @@
-# CPTW Discount Kernel
+# Discount Kernel
 
-Internal pure-rule kernel for discount and coupon calculations across CPTW projects.
+Config-driven discount and coupon kernel for Laravel projects.
 
 ## Scope
 
-This package provides only rule engines and DTO/Context objects:
+This package provides reusable promotion engines and DTO/context objects:
 
 - Product price calculation (`DiscountEngineInterface`)
+- Cart promotion condition generation (`CartPromotionEngineInterface`)
 - Coupon eligibility validation (`CouponEligibilityInterface`)
 - Coupon code generation (`CouponCodeGeneratorInterface`)
-- Cart promotion engine contract (`CartPromotionEngineInterface`)
 
-Out of scope (must stay in app adapters):
+Out of scope (kept in application adapter layer):
 
-- Eloquent queries and DB writes
-- Session/Cookie/Auth state
-- Admin UI (Filament)
-- Queue/job orchestration and external APIs
+- Eloquent queries and persistence
+- Session/Cookie/Auth orchestration
+- Admin UI
+- Domain-specific flow control
 
 ## Requirements
 
 - PHP `^8.4`
-
-## Version compatibility
-
-- `1.x` targets Laravel `12.x` application adapters.
-- Runtime logic is framework-agnostic; Laravel binding is handled by host projects.
+- Laravel `^12.0`
 
 ## Install
 
-### Option A: Path repository (same monorepo)
+### Option A: Local path repository
 
 In application `composer.json`:
 
@@ -38,22 +34,22 @@ In application `composer.json`:
   "repositories": [
     {
       "type": "path",
-      "url": "packages/cptw-discount-kernel",
+      "url": "packages/discount",
       "options": {
         "symlink": true
       }
     }
   ],
   "require": {
-    "cptw/discount-kernel": "^1.0"
+    "lalalili/discount": "^2.0"
   }
 }
 ```
 
-Then:
+Then run:
 
 ```bash
-composer update cptw/discount-kernel
+composer update lalalili/discount
 ```
 
 ### Option B: Private VCS repository
@@ -69,41 +65,51 @@ In application `composer.json`:
     }
   ],
   "require": {
-    "cptw/discount-kernel": "^1.0"
+    "lalalili/discount": "^2.0"
   }
 }
 ```
 
-Then:
+Then run:
 
 ```bash
-composer update cptw/discount-kernel
+composer update lalalili/discount
 ```
 
-## Laravel binding example
+## Laravel setup
 
-```php
-use Cptw\DiscountKernel\Contracts\DiscountEngineInterface;
-use Cptw\DiscountKernel\Contracts\CouponEligibilityInterface;
-use Cptw\DiscountKernel\Contracts\CouponCodeGeneratorInterface;
-use Cptw\DiscountKernel\Engines\DefaultDiscountEngine;
-use Cptw\DiscountKernel\Engines\DefaultCouponEligibilityEngine;
-use Cptw\DiscountKernel\Engines\DefaultCouponCodeGenerator;
+Publish default config (optional):
 
-$this->app->singleton(DiscountEngineInterface::class, DefaultDiscountEngine::class);
-$this->app->singleton(CouponEligibilityInterface::class, DefaultCouponEligibilityEngine::class);
-$this->app->singleton(CouponCodeGeneratorInterface::class, DefaultCouponCodeGenerator::class);
+```bash
+php artisan vendor:publish --tag=discount-config
 ```
 
-## Quick usage
+The package reads `config/discount.php` for all rule mappings.
 
-### Price calculation
+## Config-driven model
+
+`config/discount.php` sections:
+
+- `event.type_role_map`
+- `event.priorities`
+- `coupon.scope_map`
+- `coupon.code.prefixes`
+- `coupon.code.templates`
+- `coupon.code.tokens`
+- `cart.roles`
+- `cart.gift_resolver`
+
+With this design, another project only needs to change config values (type mapping, scope mapping, code template, cart role mapping) without rewriting engine logic.
+
+## Minimal usage
+
+### Product pricing
 
 ```php
-use Cptw\DiscountKernel\Contexts\ProductContext;
-use Cptw\DiscountKernel\Contexts\PromotionContext;
-use Cptw\DiscountKernel\Contexts\PromotionSet;
-use Cptw\DiscountKernel\Engines\DefaultDiscountEngine;
+use Discount\Kernel\Contexts\ProductContext;
+use Discount\Kernel\Contexts\PromotionContext;
+use Discount\Kernel\Contexts\PromotionSet;
+use Discount\Kernel\Engines\DefaultDiscountEngine;
 
 $engine = new DefaultDiscountEngine();
 
@@ -114,20 +120,20 @@ $result = $engine->price(
     ])
 );
 
-$price = $result->price; // 800
+$price = $result->price;
 ```
 
 ### Coupon eligibility
 
 ```php
-use Cptw\DiscountKernel\Contexts\CartContext;
-use Cptw\DiscountKernel\Contexts\CouponContext;
-use Cptw\DiscountKernel\Contexts\UserContext;
-use Cptw\DiscountKernel\Engines\DefaultCouponEligibilityEngine;
+use Discount\Kernel\Contexts\CartContext;
+use Discount\Kernel\Contexts\CouponContext;
+use Discount\Kernel\Contexts\UserContext;
+use Discount\Kernel\Engines\DefaultCouponEligibilityEngine;
 
 $engine = new DefaultCouponEligibilityEngine();
 
-$eligibility = $engine->validate(
+$result = $engine->validate(
     new CouponContext(scope: 0, triggerAmount: 500, amount: 100),
     new CartContext(
         orderTotal: 1200,
@@ -142,25 +148,58 @@ $eligibility = $engine->validate(
     new UserContext(123)
 );
 
-$isEligible = $eligibility->eligible;
+$isEligible = $result->eligible;
 ```
 
 ### Coupon code generation
 
 ```php
-use Cptw\DiscountKernel\Contexts\CodeContext;
-use Cptw\DiscountKernel\Engines\DefaultCouponCodeGenerator;
+use Discount\Kernel\Contexts\CodeContext;
+use Discount\Kernel\Engines\DefaultCouponCodeGenerator;
 
 $engine = new DefaultCouponCodeGenerator();
 
 $code = $engine->generate(new CodeContext(
-    typeValue: 1,
+    typeValue: 12,
     userId: 123,
+    count: 5,
     existsChecker: fn (string $candidate) => false,
 ));
 ```
 
-## Static analysis (Larastan level 8)
+### Cart adjustment generation
+
+```php
+use Discount\Kernel\Contexts\CartContext;
+use Discount\Kernel\Contexts\PromotionContext;
+use Discount\Kernel\Contexts\PromotionSet;
+use Discount\Kernel\Engines\DefaultCartPromotionEngine;
+
+$engine = new DefaultCartPromotionEngine();
+
+$result = $engine->apply(
+    new CartContext(
+        orderTotal: 0,
+        allAmount: 0,
+        bookAmount: 0,
+        ebookAmount: 0,
+        specificProductsAmount: 0,
+        hasBook: false,
+        hasEbook: false,
+        hasSpecificProducts: false,
+        productId: 1001,
+        productPrice: 1200,
+        selectedGroupRebateEventId: null,
+    ),
+    new PromotionSet([
+        new PromotionContext(type: 7, eventId: 201, name: 'Unique discount', discountAmount: 0.8),
+    ])
+);
+
+$adjustments = $result->adjustments;
+```
+
+## Local quality checks
 
 Inside package directory:
 
@@ -169,9 +208,11 @@ composer install
 composer analyse
 ```
 
-## Release process
+## Quick onboarding for another project
 
-1. Update package code and tests in source repository.
-2. Run static analysis (`composer analyse`).
-3. Sync package directory to `git@github.com:lalalili/discount.git`.
-4. Tag version if needed (`v1.x.y`) and update consuming project constraints.
+1. Install `lalalili/discount`.
+2. Publish or create `config/discount.php`.
+3. Map local event/coupon type values in config.
+4. Set `cart.gift_resolver` to your app resolver class.
+5. Bind or use default engines in your service layer.
+6. Run project smoke tests for pricing/coupon/cart paths.
