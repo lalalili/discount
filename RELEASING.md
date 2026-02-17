@@ -1,0 +1,71 @@
+# Releasing Guide
+
+This package is developed in monorepo (`packages/discount`) and mirrored to:
+
+- `https://github.com/lalalili/discount`
+
+Use this SOP for each release.
+
+## 1) Prepare in monorepo
+
+1. Implement changes under `packages/discount`.
+2. Run related tests in the main project.
+3. Commit with a clear Conventional Commit message.
+
+## 2) Sync to package repository
+
+```bash
+TMP_DIR=/tmp/discount-sync
+rm -rf "$TMP_DIR"
+git clone https://github.com/lalalili/discount.git "$TMP_DIR"
+rsync -a --delete --exclude='.git' packages/discount/ "$TMP_DIR"/
+cd "$TMP_DIR"
+```
+
+Review and commit:
+
+```bash
+git status --short
+git add -A
+git commit -m "feat(discount): ..."
+```
+
+## 3) Tag and push
+
+For minor release:
+
+```bash
+git tag v2.1.0
+git push origin main --tags
+```
+
+For patch release:
+
+```bash
+git tag v2.1.1
+git push origin main --tags
+```
+
+## 4) Release note checklist
+
+Create GitHub release note with:
+
+1. New capabilities.
+2. Breaking changes (explicitly state none if no breaking change).
+3. Upgrade steps.
+4. Test coverage list.
+
+## 5) Consumer project update
+
+- Path repository projects: update is immediate from local source.
+- External projects:
+
+```bash
+composer update lalalili/discount
+```
+
+Recommended requirement:
+
+```json
+"lalalili/discount": "^2.1"
+```

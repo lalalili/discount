@@ -81,7 +81,7 @@ In application `composer.json`:
     }
   ],
   "require": {
-    "lalalili/discount": "^2.0"
+    "lalalili/discount": "^2.1"
   }
 }
 ```
@@ -105,7 +105,7 @@ In application `composer.json`:
     }
   ],
   "require": {
-    "lalalili/discount": "^2.0"
+    "lalalili/discount": "^2.1"
   }
 }
 ```
@@ -272,6 +272,17 @@ $result = $engine->apply(
 $adjustments = $result->adjustments;
 ```
 
+## Stable Reason Codes
+
+`CouponValidationResult::reasonCode` and `CouponDiscountResult::reasonCode` are stable public contract fields.
+
+- `COUPON_NOT_FOUND`
+- `AUTH_REQUIRED`
+- `COUPON_ALREADY_USED`
+- `COUPON_OUT_OF_STOCK`
+- `DISCOUNT_INVALID`
+- `ELIGIBILITY_FAILED`
+
 ## Coupon Flows (App Adapter Layer)
 
 Keep these flows in your application and call kernel engines:
@@ -291,8 +302,9 @@ Recommended deprecated runtime guard:
 
 ## Versioning Note
 
-Current package `composer.json` version is `2.0.0`.
-If you publish the newly added interfaces/DTOs/services externally, consider bumping to `2.1.x` (minor, additive).
+Current package `composer.json` version is `2.1.0`.
+This release is a minor update from `2.0.x` and does not introduce breaking API changes.
+See `CHANGELOG.md` for release notes and `RELEASING.md` for sync/tag SOP.
 
 ## Local Quality Checks
 
