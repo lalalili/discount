@@ -3,7 +3,6 @@
     "description": "Config-driven discount and coupon kernel for Laravel projects.",
     "type": "library",
     "license": "proprietary",
-    "version": "2.1.0",
     "require": {
         "php": "^8.4",
         "illuminate/support": "^12.0"
