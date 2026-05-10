@@ -1,0 +1,565 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Discount\Kernel\Engines;
+
+use Discount\Kernel\Contexts\CartContext;
+use Discount\Kernel\Contexts\CartLineContext;
+use Discount\Kernel\Contexts\PromotionContext;
+use Discount\Kernel\Contexts\PromotionSet;
+use Discount\Kernel\Contracts\CartPromotionEngineInterface;
+use Discount\Kernel\Contracts\CartPromotionRefreshServiceInterface;
+use Discount\Kernel\DTOs\CartPromotionRefreshInput;
+use Discount\Kernel\DTOs\CartPromotionRefreshResult;
+use Discount\Kernel\Support\DiscountConfig;
+
+final class DefaultCartPromotionRefreshService implements CartPromotionRefreshServiceInterface
+{
+    public function __construct(
+        private ?CartPromotionEngineInterface $cartPromotionEngine = null,
+    ) {
+    }
+
+    public function refresh(CartPromotionRefreshInput $input): CartPromotionRefreshResult
+    {
+        $selectedGroupRebateEventIds = $this->resolveSelectedGroupRebateEventIds(
+            $input->lines,
+            $input->promotionSetsByProductId,
+        );
+
+        $itemAdjustmentsByLineId = [];
+
+        foreach ($input->lines as $line) {
+            $promotionSet = $this->promotionSetForProductId($line->productId, $input->promotionSetsByProductId);
+
+            if (! $promotionSet instanceof PromotionSet || $promotionSet->promotions === []) {
+                continue;
+            }
+
+            $selectedEventId = $selectedGroupRebateEventIds[$line->productId] ?? null;
+            $result = $this->resolveCartPromotionEngine()->apply(
+                $this->cartContextForLine($input->cartContext, $line, $selectedEventId),
+                $promotionSet,
+            );
+
+            if ($result->adjustments !== []) {
+                $itemAdjustmentsByLineId[$line->id] = $result->adjustments;
+            }
+        }
+
+        return new CartPromotionRefreshResult(
+            itemAdjustmentsByLineId: $itemAdjustmentsByLineId,
+            cartAdjustments: $this->buildCartAdjustments($input->lines, $itemAdjustmentsByLineId),
+            selectedGroupRebateEventIds: $selectedGroupRebateEventIds,
+            metadata: [
+                'line_count' => count($input->lines),
+                'selected_group_rebate_count' => count($selectedGroupRebateEventIds),
+            ],
+        );
+    }
+
+    /**
+     * @param list<CartLineContext> $lines
+     * @param array<int|string, PromotionSet> $promotionSetsByProductId
+     * @return array<int|string, int>
+     */
+    private function resolveSelectedGroupRebateEventIds(array $lines, array $promotionSetsByProductId): array
+    {
+        $rebateTriggerItems = [];
+
+        foreach ($lines as $line) {
+            if ($line->associatedModel !== 'Product') {
+                continue;
+            }
+
+            $promotionSet = $this->promotionSetForProductId($line->productId, $promotionSetsByProductId);
+            if (! $promotionSet instanceof PromotionSet) {
+                continue;
+            }
+
+            $groupPromotions = $this->sortPromotions(array_values(array_filter(
+                $promotionSet->promotions,
+                fn (PromotionContext $promotion): bool => $this->isGroupRebateType($promotion->type)
+                    && $promotion->eventId !== null,
+            )));
+
+            if ($groupPromotions === []) {
+                continue;
+            }
+
+            $meet = $this->firstPromotionMatchingQuantity($groupPromotions, $line->quantity);
+            $eligiblePromotions = $meet instanceof PromotionContext
+                ? array_values(array_filter(
+                    $groupPromotions,
+                    fn (PromotionContext $promotion): bool => $this->promotionSort($promotion) <= $this->promotionSort($meet),
+                ))
+                : $groupPromotions;
+
+            $rebateTriggerItems[$line->productId] = [
+                'promotions' => $groupPromotions,
+                'meet' => $meet,
+                'event_ids' => array_values(array_filter(
+                    array_map(static fn (PromotionContext $promotion): ?int => $promotion->eventId, $eligiblePromotions),
+                    static fn (?int $eventId): bool => $eventId !== null,
+                )),
+                'quantity' => $line->quantity,
+                'max' => $meet instanceof PromotionContext
+                    ? $this->maxRebateTriggerAmount($eligiblePromotions)
+                    : 0,
+            ];
+        }
+
+        if ($rebateTriggerItems === []) {
+            return [];
+        }
+
+        uasort(
+            $rebateTriggerItems,
+            static fn (array $first, array $second): int => (int) $second['max'] <=> (int) $first['max'],
+        );
+
+        $eventIdsByProductId = [];
+        $quantitiesByProductId = [];
+        foreach ($rebateTriggerItems as $productId => $item) {
+            $eventIdsByProductId[$productId] = $item['event_ids'];
+            $quantitiesByProductId[$productId] = (int) $item['quantity'];
+        }
+
+        $selected = [];
+        foreach ($rebateTriggerItems as $productId => $item) {
+            $sharedEventIds = $this->intersectEventIds($eventIdsByProductId);
+            $groupEvent = $this->firstSharedGroupPromotion(
+                $item['promotions'],
+                $sharedEventIds,
+                array_sum($quantitiesByProductId),
+            );
+
+            $meet = $item['meet'];
+            if ($meet instanceof PromotionContext) {
+                $eventId = $meet->eventId;
+
+                if ($groupEvent instanceof PromotionContext && $this->promotionSort($groupEvent) < $this->promotionSort($meet)) {
+                    $eventId = $groupEvent->eventId;
+                } elseif ($groupEvent instanceof PromotionContext && $eventId !== $groupEvent->eventId) {
+                    unset($eventIdsByProductId[$productId], $quantitiesByProductId[$productId]);
+                }
+            } else {
+                $eventId = $groupEvent?->eventId;
+            }
+
+            if ($eventId !== null) {
+                $selected[$productId] = $eventId;
+            }
+        }
+
+        return $selected;
+    }
+
+    /**
+     * @param list<PromotionContext> $promotions
+     */
+    private function firstPromotionMatchingQuantity(array $promotions, int $quantity): ?PromotionContext
+    {
+        foreach ($promotions as $promotion) {
+            if ((float) ($promotion->rebateTriggerAmount ?? 0) <= $quantity) {
+                return $promotion;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<PromotionContext> $promotions
+     * @param list<int> $sharedEventIds
+     */
+    private function firstSharedGroupPromotion(array $promotions, array $sharedEventIds, int $quantity): ?PromotionContext
+    {
+        foreach ($promotions as $promotion) {
+            if ($promotion->eventId === null || ! in_array($promotion->eventId, $sharedEventIds, true)) {
+                continue;
+            }
+
+            if ((float) ($promotion->rebateTriggerAmount ?? 0) <= $quantity) {
+                return $promotion;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<int|string, list<int>> $eventIdsByProductId
+     * @return list<int>
+     */
+    private function intersectEventIds(array $eventIdsByProductId): array
+    {
+        $eventIdSets = array_values($eventIdsByProductId);
+        $intersection = array_shift($eventIdSets);
+
+        if ($intersection === null) {
+            return [];
+        }
+
+        foreach ($eventIdSets as $eventIds) {
+            $intersection = array_values(array_intersect($intersection, $eventIds));
+        }
+
+        return array_map(static fn (int|string $eventId): int => (int) $eventId, $intersection);
+    }
+
+    /**
+     * @param list<PromotionContext> $promotions
+     */
+    private function maxRebateTriggerAmount(array $promotions): int
+    {
+        $max = 0;
+
+        foreach ($promotions as $promotion) {
+            $max = max($max, (int) ($promotion->rebateTriggerAmount ?? 0));
+        }
+
+        return $max;
+    }
+
+    /**
+     * @param list<PromotionContext> $promotions
+     * @return list<PromotionContext>
+     */
+    private function sortPromotions(array $promotions): array
+    {
+        usort(
+            $promotions,
+            fn (PromotionContext $first, PromotionContext $second): int => $this->promotionSort($first) <=> $this->promotionSort($second),
+        );
+
+        return $promotions;
+    }
+
+    private function promotionSort(PromotionContext $promotion): int
+    {
+        return (int) ($promotion->sort ?? 0);
+    }
+
+    /**
+     * @param array<int|string, PromotionSet> $promotionSetsByProductId
+     */
+    private function promotionSetForProductId(int|string $productId, array $promotionSetsByProductId): ?PromotionSet
+    {
+        if (array_key_exists($productId, $promotionSetsByProductId)) {
+            return $promotionSetsByProductId[$productId];
+        }
+
+        $key = (string) $productId;
+
+        return $promotionSetsByProductId[$key] ?? null;
+    }
+
+    private function cartContextForLine(CartContext $cartContext, CartLineContext $line, ?int $selectedGroupRebateEventId): CartContext
+    {
+        return new CartContext(
+            orderTotal: $cartContext->orderTotal,
+            allAmount: $cartContext->allAmount,
+            bookAmount: $cartContext->bookAmount,
+            ebookAmount: $cartContext->ebookAmount,
+            specificProductsAmount: $cartContext->specificProductsAmount,
+            hasBook: $cartContext->hasBook,
+            hasEbook: $cartContext->hasEbook,
+            hasSpecificProducts: $cartContext->hasSpecificProducts,
+            productId: is_numeric((string) $line->productId) ? (int) $line->productId : null,
+            productPrice: $line->unitPrice,
+            selectedGroupRebateEventId: $selectedGroupRebateEventId,
+            meta: $cartContext->meta,
+        );
+    }
+
+    /**
+     * @param list<CartLineContext> $lines
+     * @param array<int|string, list<array<string, mixed>>> $itemAdjustmentsByLineId
+     * @return list<array{name:string,type:'rebate'|'gift',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}>
+     */
+    private function buildCartAdjustments(array $lines, array $itemAdjustmentsByLineId): array
+    {
+        $linesById = [];
+        foreach ($lines as $line) {
+            $linesById[$line->id] = $line;
+        }
+
+        $rebates = [];
+        $gifts = [];
+
+        foreach ($itemAdjustmentsByLineId as $lineId => $adjustments) {
+            $line = $linesById[$lineId] ?? null;
+            if (! $line instanceof CartLineContext) {
+                continue;
+            }
+
+            $lineAmount = $this->lineAmountWithDiscounts($line, $adjustments);
+
+            foreach ($adjustments as $adjustment) {
+                $type = (string) ($adjustment['type'] ?? '');
+                $attributes = is_array($adjustment['attributes'] ?? null) ? $adjustment['attributes'] : [];
+                $eventId = $this->nullableInt($attributes['event_id'] ?? null);
+
+                if ($eventId === null) {
+                    continue;
+                }
+
+                if ($type === 'rebate') {
+                    $rebates[$eventId] = $this->appendAggregate($rebates[$eventId] ?? null, $adjustment, $attributes, $line, $lineAmount);
+                }
+
+                if ($type === 'gift') {
+                    $gifts[$eventId] = $this->appendAggregate($gifts[$eventId] ?? null, $adjustment, $attributes, $line, $lineAmount);
+                }
+            }
+        }
+
+        return array_merge(
+            $this->buildRebateCartAdjustments($rebates),
+            $this->buildGiftCartAdjustments($gifts),
+        );
+    }
+
+    /**
+     * @param array<string, mixed>|null $entry
+     * @param array<string, mixed> $adjustment
+     * @param array<string, mixed> $attributes
+     * @return array<string, mixed>
+     */
+    private function appendAggregate(
+        ?array $entry,
+        array $adjustment,
+        array $attributes,
+        CartLineContext $line,
+        float $lineAmount,
+    ): array {
+        $entry ??= [
+            'name' => (string) ($adjustment['name'] ?? ''),
+            'type' => (string) ($adjustment['type'] ?? ''),
+            'order' => (int) ($adjustment['order'] ?? 0),
+            'attributes' => $attributes,
+            'sum_amount' => 0.0,
+            'sum_quantity' => 0,
+            'products' => [],
+            'sort' => (int) ($attributes['sort'] ?? 0),
+        ];
+
+        $entry['sum_amount'] = (float) $entry['sum_amount'] + $lineAmount;
+        $entry['sum_quantity'] = (int) $entry['sum_quantity'] + $line->quantity;
+
+        $productCode = $this->productCode($line);
+        if ($productCode !== null) {
+            $entry['products'][] = $productCode;
+        }
+
+        return $entry;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rebates
+     * @return list<array{name:string,type:'rebate',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}>
+     */
+    private function buildRebateCartAdjustments(array $rebates): array
+    {
+        usort($rebates, static fn (array $first, array $second): int => (int) $first['sort'] <=> (int) $second['sort']);
+
+        $adjustments = [];
+        foreach ($rebates as $rebate) {
+            $attributes = is_array($rebate['attributes'] ?? null) ? $rebate['attributes'] : [];
+            $triggerAmount = (float) ($attributes['rebate_trigger_amount'] ?? 0);
+
+            if ($triggerAmount <= 0 || (float) $rebate['sum_amount'] < $triggerAmount) {
+                continue;
+            }
+
+            $times = ! empty($attributes['repeatable'])
+                ? max(1, (int) floor((float) $rebate['sum_amount'] / $triggerAmount))
+                : 1;
+            $rebateAmount = (float) ($attributes['rebate_get_amount'] ?? 0) * $times;
+
+            $attributes['sum_amount'] = $rebate['sum_amount'];
+            $attributes['sum_quantity'] = $rebate['sum_quantity'];
+            $attributes['products'] = $rebate['products'];
+
+            $adjustments[] = [
+                'name' => (string) $rebate['name'],
+                'type' => 'rebate',
+                'target' => 'total',
+                'value' => '-' . $this->formatNumber($rebateAmount),
+                'order' => $this->resolveTypeOrder($this->nullableInt($attributes['type'] ?? null) ?? (int) $rebate['order']),
+                'attributes' => $attributes,
+            ];
+        }
+
+        return $adjustments;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $gifts
+     * @return list<array{name:string,type:'gift',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}>
+     */
+    private function buildGiftCartAdjustments(array $gifts): array
+    {
+        usort($gifts, static fn (array $first, array $second): int => (int) $first['sort'] <=> (int) $second['sort']);
+
+        $adjustments = [];
+        foreach ($gifts as $gift) {
+            $attributes = is_array($gift['attributes'] ?? null) ? $gift['attributes'] : [];
+            $needAmount = (float) ($attributes['gift_trigger_amount'] ?? 0);
+            $needQuantity = (int) ($attributes['gift_trigger_quantity'] ?? 0);
+            $sumAmount = (float) $gift['sum_amount'];
+            $sumQuantity = (int) $gift['sum_quantity'];
+
+            if (($needAmount > 0 && $sumAmount < $needAmount) || ($needQuantity > 0 && $sumQuantity < $needQuantity)) {
+                continue;
+            }
+
+            $giftQuantity = 1;
+            if (! empty($attributes['repeatable'])) {
+                $amountTimes = $needAmount > 0 ? (int) floor($sumAmount / $needAmount) : 0;
+                $quantityTimes = $needQuantity > 0 ? (int) floor($sumQuantity / $needQuantity) : 0;
+                $giftQuantity = max($amountTimes, $quantityTimes);
+            }
+
+            if ($giftQuantity <= 0) {
+                continue;
+            }
+
+            $attributes['sum_amount'] = $sumAmount;
+            $attributes['sum_quantity'] = $sumQuantity;
+            $attributes['gift_quantity'] = $giftQuantity;
+            $attributes['products'] = $gift['products'];
+
+            $adjustments[] = [
+                'name' => (string) $gift['name'],
+                'type' => 'gift',
+                'target' => 'total',
+                'value' => 0,
+                'order' => $this->resolveTypeOrder($this->firstConfiguredType('gift_types', (int) $gift['order'])),
+                'attributes' => $attributes,
+            ];
+        }
+
+        return $adjustments;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $adjustments
+     */
+    private function lineAmountWithDiscounts(CartLineContext $line, array $adjustments): float
+    {
+        $unitPrice = $line->unitPrice;
+
+        foreach ($adjustments as $adjustment) {
+            if (($adjustment['type'] ?? null) !== 'discount') {
+                continue;
+            }
+
+            $unitPrice = $this->applyAdjustmentValue($unitPrice, $adjustment['value'] ?? 0);
+        }
+
+        return max(0.0, $unitPrice) * $line->quantity;
+    }
+
+    private function applyAdjustmentValue(float $amount, mixed $value): float
+    {
+        $raw = trim((string) $value);
+        $subtracted = str_starts_with($raw, '-');
+        $clean = str_replace(['+', '-', ',', ' '], '', $raw);
+
+        if (str_contains($clean, '%')) {
+            $percent = (float) str_replace('%', '', $clean);
+            $delta = $amount * ($percent / 100);
+
+            return max(0.0, $subtracted ? $amount - $delta : $amount + $delta);
+        }
+
+        $delta = (float) $clean;
+
+        return max(0.0, $subtracted ? $amount - $delta : $amount + $delta);
+    }
+
+    private function productCode(CartLineContext $line): ?string
+    {
+        foreach (['product_code', 'prod_no', 'sku', 'number'] as $key) {
+            $value = $line->attributes[$key] ?? null;
+            if (is_scalar($value) && (string) $value !== '') {
+                return (string) $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function nullableInt(mixed $value): ?int
+    {
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    private function formatNumber(float $value): string
+    {
+        if (floor($value) === $value) {
+            return (string) (int) $value;
+        }
+
+        return rtrim(rtrim(number_format($value, 4, '.', ''), '0'), '.');
+    }
+
+    private function resolveTypeOrder(int $type): int
+    {
+        $typeOrderMap = DiscountConfig::get('event.priorities.type_order', []);
+
+        if (! is_array($typeOrderMap)) {
+            return $type;
+        }
+
+        return (int) ($typeOrderMap[$type] ?? $typeOrderMap[(string) $type] ?? $type);
+    }
+
+    private function isGroupRebateType(int $type): bool
+    {
+        return in_array($type, $this->resolveTypeSet('group_rebate_types'), true);
+    }
+
+    private function firstConfiguredType(string $key, int $fallback): int
+    {
+        $types = $this->resolveTypeSet($key);
+
+        return $types[0] ?? $fallback;
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function resolveTypeSet(string $key): array
+    {
+        $set = DiscountConfig::get('cart.roles.' . $key, []);
+
+        if (! is_array($set)) {
+            return [];
+        }
+
+        return array_values(array_map(static fn (mixed $value): int => (int) $value, $set));
+    }
+
+    private function resolveCartPromotionEngine(): CartPromotionEngineInterface
+    {
+        if ($this->cartPromotionEngine instanceof CartPromotionEngineInterface) {
+            return $this->cartPromotionEngine;
+        }
+
+        if (function_exists('app') && app()->bound(CartPromotionEngineInterface::class)) {
+            /** @var CartPromotionEngineInterface $engine */
+            $engine = app(CartPromotionEngineInterface::class);
+            $this->cartPromotionEngine = $engine;
+
+            return $this->cartPromotionEngine;
+        }
+
+        $this->cartPromotionEngine = new DefaultCartPromotionEngine();
+
+        return $this->cartPromotionEngine;
+    }
+}
