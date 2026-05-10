@@ -29,6 +29,8 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
         );
 
         $itemAdjustmentsByLineId = [];
+        $appliedPromotions = [];
+        $skippedPromotions = [];
 
         foreach ($input->lines as $line) {
             $promotionSet = $this->promotionSetForProductId($line->productId, $input->promotionSetsByProductId);
@@ -45,17 +47,43 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
 
             if ($result->adjustments !== []) {
                 $itemAdjustmentsByLineId[$line->id] = $result->adjustments;
+                $appliedPromotions = array_merge(
+                    $appliedPromotions,
+                    $this->appliedPromotionsForLine($line, $result->adjustments),
+                );
             }
+
+            $skippedPromotions = array_merge(
+                $skippedPromotions,
+                $this->skippedPromotionsForLine($line, $promotionSet, $result->adjustments, $selectedEventId),
+            );
         }
+
+        $cartAdjustments = $this->buildCartAdjustments(
+            $input->lines,
+            $itemAdjustmentsByLineId,
+            $input->giftFulfillment,
+            $skippedPromotions,
+        );
+        $appliedPromotions = array_merge(
+            $appliedPromotions,
+            $this->appliedPromotionsForCart($cartAdjustments),
+        );
+        $totals = $this->buildTotals($input->lines, $itemAdjustmentsByLineId, $cartAdjustments);
 
         return new CartPromotionRefreshResult(
             itemAdjustmentsByLineId: $itemAdjustmentsByLineId,
-            cartAdjustments: $this->buildCartAdjustments($input->lines, $itemAdjustmentsByLineId),
+            cartAdjustments: $cartAdjustments,
             selectedGroupRebateEventIds: $selectedGroupRebateEventIds,
             metadata: [
                 'line_count' => count($input->lines),
                 'selected_group_rebate_count' => count($selectedGroupRebateEventIds),
+                'applied_count' => count($appliedPromotions),
+                'skipped_count' => count($skippedPromotions),
             ],
+            appliedPromotions: $appliedPromotions,
+            skippedPromotions: $skippedPromotions,
+            totals: $totals,
         );
     }
 
@@ -277,9 +305,15 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
     /**
      * @param list<CartLineContext> $lines
      * @param array<int|string, list<array<string, mixed>>> $itemAdjustmentsByLineId
+     * @param list<array<string, mixed>> $skippedPromotions
      * @return list<array{name:string,type:'rebate'|'gift',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}>
      */
-    private function buildCartAdjustments(array $lines, array $itemAdjustmentsByLineId): array
+    private function buildCartAdjustments(
+        array $lines,
+        array $itemAdjustmentsByLineId,
+        string $giftFulfillment,
+        array &$skippedPromotions,
+    ): array
     {
         $linesById = [];
         foreach ($lines as $line) {
@@ -317,8 +351,8 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
         }
 
         return array_merge(
-            $this->buildRebateCartAdjustments($rebates),
-            $this->buildGiftCartAdjustments($gifts),
+            $this->buildRebateCartAdjustments($rebates, $skippedPromotions),
+            $this->buildGiftCartAdjustments($gifts, $giftFulfillment, $skippedPromotions),
         );
     }
 
@@ -359,9 +393,10 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
 
     /**
      * @param array<int, array<string, mixed>> $rebates
+     * @param list<array<string, mixed>> $skippedPromotions
      * @return list<array{name:string,type:'rebate',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}>
      */
-    private function buildRebateCartAdjustments(array $rebates): array
+    private function buildRebateCartAdjustments(array $rebates, array &$skippedPromotions): array
     {
         usort($rebates, static fn (array $first, array $second): int => (int) $first['sort'] <=> (int) $second['sort']);
 
@@ -371,6 +406,7 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             $triggerAmount = (float) ($attributes['rebate_trigger_amount'] ?? 0);
 
             if ($triggerAmount <= 0 || (float) $rebate['sum_amount'] < $triggerAmount) {
+                $skippedPromotions[] = $this->cartSkippedPromotion($rebate, 'cart_rebate_threshold_not_met');
                 continue;
             }
 
@@ -398,9 +434,10 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
 
     /**
      * @param array<int, array<string, mixed>> $gifts
+     * @param list<array<string, mixed>> $skippedPromotions
      * @return list<array{name:string,type:'gift',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}>
      */
-    private function buildGiftCartAdjustments(array $gifts): array
+    private function buildGiftCartAdjustments(array $gifts, string $giftFulfillment, array &$skippedPromotions): array
     {
         usort($gifts, static fn (array $first, array $second): int => (int) $first['sort'] <=> (int) $second['sort']);
 
@@ -413,6 +450,7 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             $sumQuantity = (int) $gift['sum_quantity'];
 
             if (($needAmount > 0 && $sumAmount < $needAmount) || ($needQuantity > 0 && $sumQuantity < $needQuantity)) {
+                $skippedPromotions[] = $this->cartSkippedPromotion($gift, 'gift_threshold_not_met');
                 continue;
             }
 
@@ -431,6 +469,8 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             $attributes['sum_quantity'] = $sumQuantity;
             $attributes['gift_quantity'] = $giftQuantity;
             $attributes['products'] = $gift['products'];
+            $attributes['gift_code'] = $attributes['gift_code'] ?? $attributes['gift_prod_no'] ?? null;
+            $attributes['fulfillment'] = $giftFulfillment === 'add_item' ? 'add_item' : 'condition_only';
 
             $adjustments[] = [
                 'name' => (string) $gift['name'],
@@ -443,6 +483,185 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
         }
 
         return $adjustments;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $adjustments
+     * @return list<array<string, mixed>>
+     */
+    private function appliedPromotionsForLine(CartLineContext $line, array $adjustments): array
+    {
+        $applied = [];
+
+        foreach ($adjustments as $adjustment) {
+            $attributes = is_array($adjustment['attributes'] ?? null) ? $adjustment['attributes'] : [];
+            $eventId = $this->nullableInt($attributes['event_id'] ?? null);
+
+            if ($eventId === null) {
+                continue;
+            }
+
+            $applied[] = [
+                'scope' => 'line',
+                'line_id' => $line->id,
+                'product_id' => $line->productId,
+                'event_id' => $eventId,
+                'type' => $this->nullableInt($attributes['type'] ?? null),
+                'target' => (string) ($adjustment['target'] ?? 'item'),
+                'adjustment_type' => (string) ($adjustment['type'] ?? ''),
+                'name' => (string) ($adjustment['name'] ?? ''),
+                'value' => $adjustment['value'] ?? 0,
+            ];
+        }
+
+        return $applied;
+    }
+
+    /**
+     * @param list<array{name:string,type:'rebate'|'gift',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}> $cartAdjustments
+     * @return list<array<string, mixed>>
+     */
+    private function appliedPromotionsForCart(array $cartAdjustments): array
+    {
+        $applied = [];
+
+        foreach ($cartAdjustments as $adjustment) {
+            $attributes = $adjustment['attributes'];
+            $eventId = $this->nullableInt($attributes['event_id'] ?? null);
+
+            if ($eventId === null) {
+                continue;
+            }
+
+            $applied[] = [
+                'scope' => 'cart',
+                'event_id' => $eventId,
+                'type' => $this->nullableInt($attributes['type'] ?? null),
+                'target' => $adjustment['target'],
+                'adjustment_type' => $adjustment['type'],
+                'name' => $adjustment['name'],
+                'value' => $adjustment['value'],
+            ];
+        }
+
+        return $applied;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $adjustments
+     * @return list<array<string, mixed>>
+     */
+    private function skippedPromotionsForLine(
+        CartLineContext $line,
+        PromotionSet $promotionSet,
+        array $adjustments,
+        ?int $selectedGroupRebateEventId,
+    ): array {
+        $appliedEventIds = array_values(array_filter(
+            array_map(
+                fn (array $adjustment): ?int => $this->nullableInt(
+                    is_array($adjustment['attributes'] ?? null)
+                        ? ($adjustment['attributes']['event_id'] ?? null)
+                        : null,
+                ),
+                $adjustments,
+            ),
+            static fn (?int $eventId): bool => $eventId !== null,
+        ));
+
+        $skipped = [];
+        foreach ($promotionSet->promotions as $promotion) {
+            if ($promotion->eventId === null || in_array($promotion->eventId, $appliedEventIds, true)) {
+                continue;
+            }
+
+            $reason = 'not_selected';
+            if ($this->isGroupRebateType($promotion->type)) {
+                $reason = $selectedGroupRebateEventId === null
+                    ? 'group_rebate_threshold_not_met'
+                    : 'group_rebate_not_selected';
+            } elseif ($this->isGiftType($promotion->type)) {
+                $reason = 'gift_unresolved';
+            }
+
+            $skipped[] = [
+                'scope' => 'line',
+                'line_id' => $line->id,
+                'product_id' => $line->productId,
+                'event_id' => $promotion->eventId,
+                'type' => $promotion->type,
+                'name' => $promotion->name ?? '',
+                'reason' => $reason,
+            ];
+        }
+
+        return $skipped;
+    }
+
+    /**
+     * @param array<string, mixed> $promotion
+     * @return array<string, mixed>
+     */
+    private function cartSkippedPromotion(array $promotion, string $reason): array
+    {
+        $attributes = is_array($promotion['attributes'] ?? null) ? $promotion['attributes'] : [];
+
+        return [
+            'scope' => 'cart',
+            'event_id' => $this->nullableInt($attributes['event_id'] ?? null),
+            'type' => $this->nullableInt($attributes['type'] ?? null),
+            'name' => (string) ($promotion['name'] ?? ''),
+            'reason' => $reason,
+            'sum_amount' => (float) ($promotion['sum_amount'] ?? 0),
+            'sum_quantity' => (int) ($promotion['sum_quantity'] ?? 0),
+        ];
+    }
+
+    /**
+     * @param list<CartLineContext> $lines
+     * @param array<int|string, list<array<string, mixed>>> $itemAdjustmentsByLineId
+     * @param list<array{name:string,type:'rebate'|'gift',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}> $cartAdjustments
+     * @return array<string, mixed>
+     */
+    private function buildTotals(array $lines, array $itemAdjustmentsByLineId, array $cartAdjustments): array
+    {
+        $lineTotals = [];
+        $subtotalBefore = 0.0;
+        $subtotalAfterItemAdjustments = 0.0;
+
+        foreach ($lines as $line) {
+            $lineSubtotalBefore = $line->unitPrice * $line->quantity;
+            $lineSubtotalAfter = $this->lineAmountWithDiscounts($line, $itemAdjustmentsByLineId[$line->id] ?? []);
+
+            $subtotalBefore += $lineSubtotalBefore;
+            $subtotalAfterItemAdjustments += $lineSubtotalAfter;
+
+            $lineTotals[] = [
+                'line_id' => $line->id,
+                'product_id' => $line->productId,
+                'quantity' => $line->quantity,
+                'unit_price' => $line->unitPrice,
+                'line_subtotal_before' => $lineSubtotalBefore,
+                'line_subtotal_after_item_adjustments' => $lineSubtotalAfter,
+            ];
+        }
+
+        $cartRebateAmount = 0.0;
+        foreach ($cartAdjustments as $adjustment) {
+            if ($adjustment['type'] !== 'rebate') {
+                continue;
+            }
+
+            $cartRebateAmount += abs((float) str_replace(['-', ',', ' '], '', (string) $adjustment['value']));
+        }
+
+        return [
+            'lines' => $lineTotals,
+            'subtotal_before' => $subtotalBefore,
+            'subtotal_after_item_adjustments' => $subtotalAfterItemAdjustments,
+            'cart_rebate_amount' => $cartRebateAmount,
+            'total_after_cart_rebates' => max(0.0, $subtotalAfterItemAdjustments - $cartRebateAmount),
+        ];
     }
 
     /**
@@ -521,6 +740,11 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
     private function isGroupRebateType(int $type): bool
     {
         return in_array($type, $this->resolveTypeSet('group_rebate_types'), true);
+    }
+
+    private function isGiftType(int $type): bool
+    {
+        return in_array($type, $this->resolveTypeSet('gift_types'), true);
     }
 
     private function firstConfiguredType(string $key, int $fallback): int

@@ -25,12 +25,18 @@ final class CartPromotionRefreshResult
      * }> $cartAdjustments
      * @param array<int|string, int> $selectedGroupRebateEventIds
      * @param array<string, mixed> $metadata
+     * @param list<array<string, mixed>> $appliedPromotions
+     * @param list<array<string, mixed>> $skippedPromotions
+     * @param array<string, mixed> $totals
      */
     public function __construct(
         public readonly array $itemAdjustmentsByLineId,
         public readonly array $cartAdjustments,
         public readonly array $selectedGroupRebateEventIds,
         public readonly array $metadata = [],
+        public readonly array $appliedPromotions = [],
+        public readonly array $skippedPromotions = [],
+        public readonly array $totals = [],
     ) {
     }
 }

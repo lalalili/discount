@@ -18,6 +18,7 @@ final class CartPromotionRefreshInput
         public readonly CartContext $cartContext,
         public readonly array $lines,
         public readonly array $promotionSetsByProductId,
+        public readonly string $giftFulfillment = 'condition_only',
     ) {
     }
 }

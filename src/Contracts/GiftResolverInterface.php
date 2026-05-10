@@ -6,5 +6,5 @@ namespace Discount\Kernel\Contracts;
 
 interface GiftResolverInterface
 {
-    public function resolveIdByCode(string $giftCode): ?int;
+    public function resolveIdByCode(string $giftCode): int|string|null;
 }

@@ -109,6 +109,7 @@ final class DefaultCartPromotionEngine implements CartPromotionEngineInterface
             'attributes' => array_merge([
                 'event_id'    => $promotion->eventId,
                 'event_title' => $promotion->name,
+                'type'        => $promotion->type,
                 'sort'        => $promotion->sort,
             ], $promotion->attributes),
         ];
@@ -166,7 +167,9 @@ final class DefaultCartPromotionEngine implements CartPromotionEngineInterface
                 'gift_trigger_quantity' => $promotion->giftTriggerQuantity,
                 'gift_id'               => $giftId,
                 'gift_prod_no'          => $giftCode,
+                'gift_code'             => $giftCode,
                 'repeatable'            => $promotion->repeatable,
+                'type'                  => $promotion->type,
                 'sort'                  => $promotion->sort,
             ], $promotion->attributes),
         ];
