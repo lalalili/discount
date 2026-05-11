@@ -12,6 +12,7 @@ use Discount\Kernel\Contracts\CartPromotionEngineInterface;
 use Discount\Kernel\Contracts\CartPromotionRefreshServiceInterface;
 use Discount\Kernel\DTOs\CartPromotionRefreshInput;
 use Discount\Kernel\DTOs\CartPromotionRefreshResult;
+use Discount\Kernel\DTOs\PromotionDecisionReason;
 use Discount\Kernel\Support\DiscountConfig;
 
 final class DefaultCartPromotionRefreshService implements CartPromotionRefreshServiceInterface
@@ -406,7 +407,7 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             $triggerAmount = (float) ($attributes['rebate_trigger_amount'] ?? 0);
 
             if ($triggerAmount <= 0 || (float) $rebate['sum_amount'] < $triggerAmount) {
-                $skippedPromotions[] = $this->cartSkippedPromotion($rebate, 'cart_rebate_threshold_not_met');
+                $skippedPromotions[] = $this->cartSkippedPromotion($rebate, PromotionDecisionReason::THRESHOLD_NOT_MET);
                 continue;
             }
 
@@ -450,7 +451,7 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             $sumQuantity = (int) $gift['sum_quantity'];
 
             if (($needAmount > 0 && $sumAmount < $needAmount) || ($needQuantity > 0 && $sumQuantity < $needQuantity)) {
-                $skippedPromotions[] = $this->cartSkippedPromotion($gift, 'gift_threshold_not_met');
+                $skippedPromotions[] = $this->cartSkippedPromotion($gift, PromotionDecisionReason::THRESHOLD_NOT_MET);
                 continue;
             }
 
@@ -575,13 +576,13 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
                 continue;
             }
 
-            $reason = 'not_selected';
+            $reason = PromotionDecisionReason::NOT_SELECTED;
             if ($this->isGroupRebateType($promotion->type)) {
                 $reason = $selectedGroupRebateEventId === null
-                    ? 'group_rebate_threshold_not_met'
-                    : 'group_rebate_not_selected';
+                    ? PromotionDecisionReason::THRESHOLD_NOT_MET
+                    : PromotionDecisionReason::NOT_SELECTED;
             } elseif ($this->isGiftType($promotion->type)) {
-                $reason = 'gift_unresolved';
+                $reason = PromotionDecisionReason::GIFT_UNRESOLVED;
             }
 
             $skipped[] = [

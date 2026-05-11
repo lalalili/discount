@@ -52,7 +52,45 @@ The package API is stable at interface level:
 - `CouponDiscountResult`
   - `valid`, `discount`, `finalTotal`, `reason`, `reasonCode`
 - `CouponValidationResult`
-  - `eligible`, `coupon`, `discount`, `finalTotal`, `reason`, `reasonCode`
+  - `eligible`, `coupon`, `discount`, `finalTotal`, `reason`, `reasonCode`, `pricingTrace`
+- `PricingTrace`
+  - list wrapper for `PricingTraceEntry`
+- `PricingTraceEntry`
+  - stable array fields: `stage`, `source`, `status`, `scope`, `kind`, `code`, `id`, `amount`, `final_total`, `reason_code`, `reason`, `metadata`
+
+### PricingTrace Contract
+
+`PricingTrace` is an additive public DTO introduced for discount `2.5.x`. It is an in-memory checkout and lifecycle trace, not a persistence/audit-log feature.
+
+Enum values currently emitted by the package/app adapters:
+
+- `source`: `promotion`, `coupon`
+- `status`: `applied`, `skipped`, `failed`, `issued`, `restored`
+- `stage`: `promotion_refresh`, `coupon_validate`, `coupon_apply`, `coupon_issue`, `coupon_redeem`, `coupon_inventory`, `coupon_restore`
+
+`CartPromotionRefreshResult::$pricingTrace` is normalized from `promotionDecisions` with `stage=promotion_refresh` and `source=promotion`.
+
+`CouponValidationResult::$pricingTrace` is optional and defaults to `null` for backward compatibility. `DefaultCouponApplicationService` populates a `coupon_validate` entry for eligible and failed validation outcomes. `CouponDiscountResult` intentionally does not carry trace data; application services combine discount and validation trace when they apply a coupon.
+
+Application cart adapters should store checkout coupon trace under cart context metadata such as:
+
+```php
+$cart->withContext($cart->getContext()->with('pricing_trace', [
+    'coupon' => $validationResult->pricingTrace?->toArray() ?? [],
+]));
+```
+
+Coupon cart conditions should include the applied entry in condition attributes:
+
+```php
+[
+    'attributes' => [
+        'pricing_trace_entry' => $entry->toArray(),
+    ],
+]
+```
+
+Out of scope for this stage: DB audit logs, moving coupon processing into promotion refresh, and changing the public API of `lalalili/laravelshoppingcart`.
 
 ### Context Changes
 
@@ -283,6 +321,34 @@ $adjustments = $result->adjustments;
 - `DISCOUNT_INVALID`
 - `ELIGIBILITY_FAILED`
 
+## Cart Promotion Integration Contract
+
+`CartPromotionRefreshResult` exposes both the legacy arrays (`appliedPromotions`, `skippedPromotions`) and the normalized `promotionDecisions` array. New integrations should read `promotionDecisions`; existing callers can continue reading the legacy arrays.
+
+Stable skipped promotion reasons:
+
+- `threshold_not_met`
+- `exclusive_conflict`
+- `gift_unresolved`
+- `gift_out_of_stock`
+- `not_selected`
+
+Responsibilities:
+
+- `lalalili/discount` computes item adjustments, cart rebate/gift adjustments, selected type 6 group rebates, totals, and promotion decisions. It does not mutate a shopping cart instance.
+- The application adapter loads local Product/Event/Gift models, builds `CartPromotionRefreshInput`, resolves gift stock/fulfillment behavior, and writes the returned conditions/items back to the cart.
+- `lalalili/laravelshoppingcart` triggers refresh through `before_totals` pipelines and stores observability data in `CartPipelineResult::metadata` and `snapshot()['pipelines']`.
+- Apps may skip refresh when a locally computed `promotion_refresh_signature` is unchanged, but checkout entry should force one final refresh before payment.
+
+Recommended pipeline metadata:
+
+- `promotion_version`
+- `refresh_reason`
+- `duration_ms`
+- `promotion_refresh_signature`
+- `applied_count`
+- `skipped_count`
+
 ## Coupon Flows (App Adapter Layer)
 
 Keep these flows in your application and call kernel engines:
@@ -302,8 +368,8 @@ Recommended deprecated runtime guard:
 
 ## Versioning Note
 
-Current package `composer.json` version is `2.1.0`.
-This release is a minor update from `2.0.x` and does not introduce breaking API changes.
+Current package `composer.json` version is `2.4.0`.
+This release is a minor update from `2.3.x` and does not introduce breaking API changes.
 See `CHANGELOG.md` for release notes and `RELEASING.md` for sync/tag SOP.
 
 ## Local Quality Checks

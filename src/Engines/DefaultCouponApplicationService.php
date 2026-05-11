@@ -12,6 +12,8 @@ use Discount\Kernel\Contracts\CouponDiscountEngineInterface;
 use Discount\Kernel\Contracts\CouponEligibilityInterface;
 use Discount\Kernel\Contracts\CouponRepositoryInterface;
 use Discount\Kernel\DTOs\CouponValidationResult;
+use Discount\Kernel\DTOs\PricingTrace;
+use Discount\Kernel\DTOs\PricingTraceEntry;
 use Discount\Kernel\Enums\CouponKind;
 use RuntimeException;
 
@@ -33,6 +35,13 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
                 eligible: false,
                 reason: 'Coupon not found.',
                 reasonCode: 'COUPON_NOT_FOUND',
+                pricingTrace: $this->couponValidationTrace(
+                    kind: $kind,
+                    code: $code,
+                    status: 'failed',
+                    reason: 'Coupon not found.',
+                    reasonCode: 'COUPON_NOT_FOUND',
+                ),
             );
         }
 
@@ -42,6 +51,14 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
                     eligible: false,
                     reason: 'Coupon not found.',
                     reasonCode: 'COUPON_NOT_FOUND',
+                    pricingTrace: $this->couponValidationTrace(
+                        kind: $kind,
+                        code: $code,
+                        status: 'failed',
+                        coupon: $coupon,
+                        reason: 'Coupon not found.',
+                        reasonCode: 'COUPON_NOT_FOUND',
+                    ),
                 );
             }
         }
@@ -52,6 +69,14 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
                     eligible: false,
                     reason: 'Authentication required.',
                     reasonCode: 'AUTH_REQUIRED',
+                    pricingTrace: $this->couponValidationTrace(
+                        kind: $kind,
+                        code: $code,
+                        status: 'failed',
+                        coupon: $coupon,
+                        reason: 'Authentication required.',
+                        reasonCode: 'AUTH_REQUIRED',
+                    ),
                 );
             }
 
@@ -60,6 +85,14 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
                     eligible: false,
                     reason: 'Coupon already used.',
                     reasonCode: 'COUPON_ALREADY_USED',
+                    pricingTrace: $this->couponValidationTrace(
+                        kind: $kind,
+                        code: $code,
+                        status: 'skipped',
+                        coupon: $coupon,
+                        reason: 'Coupon already used.',
+                        reasonCode: 'COUPON_ALREADY_USED',
+                    ),
                 );
             }
 
@@ -68,6 +101,14 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
                     eligible: false,
                     reason: 'Coupon out of stock.',
                     reasonCode: 'COUPON_OUT_OF_STOCK',
+                    pricingTrace: $this->couponValidationTrace(
+                        kind: $kind,
+                        code: $code,
+                        status: 'skipped',
+                        coupon: $coupon,
+                        reason: 'Coupon out of stock.',
+                        reasonCode: 'COUPON_OUT_OF_STOCK',
+                    ),
                 );
             }
         }
@@ -89,6 +130,14 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
                 eligible: false,
                 reason: $eligibility->reason,
                 reasonCode: $reasonCode,
+                pricingTrace: $this->couponValidationTrace(
+                    kind: $kind,
+                    code: $code,
+                    status: 'skipped',
+                    coupon: $coupon,
+                    reason: $eligibility->reason,
+                    reasonCode: $reasonCode,
+                ),
             );
         }
 
@@ -98,6 +147,14 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
                 eligible: false,
                 reason: $discountResult->reason,
                 reasonCode: $discountResult->reasonCode ?? 'DISCOUNT_INVALID',
+                pricingTrace: $this->couponValidationTrace(
+                    kind: $kind,
+                    code: $code,
+                    status: 'failed',
+                    coupon: $coupon,
+                    reason: $discountResult->reason,
+                    reasonCode: $discountResult->reasonCode ?? 'DISCOUNT_INVALID',
+                ),
             );
         }
 
@@ -106,7 +163,37 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
             coupon: $coupon,
             discount: $discountResult->discount,
             finalTotal: $discountResult->finalTotal,
+            pricingTrace: $this->couponValidationTrace(
+                kind: $kind,
+                code: $code,
+                status: 'applied',
+                coupon: $coupon,
+                amount: $discountResult->discount,
+                finalTotal: $discountResult->finalTotal,
+            ),
         );
+    }
+
+    private function couponValidationTrace(
+        CouponKind $kind,
+        string $code,
+        string $status,
+        ?\Discount\Kernel\DTOs\CouponData $coupon = null,
+        int|float|string|null $amount = null,
+        ?float $finalTotal = null,
+        ?string $reason = null,
+        ?string $reasonCode = null,
+    ): PricingTrace {
+        return PricingTrace::fromEntry(PricingTraceEntry::couponValidation(
+            kind: $kind,
+            code: $code,
+            status: $status,
+            coupon: $coupon,
+            amount: $amount,
+            finalTotal: $finalTotal,
+            reasonCode: $reasonCode,
+            reason: $reason,
+        ));
     }
 
     private function resolveCouponRepository(): CouponRepositoryInterface

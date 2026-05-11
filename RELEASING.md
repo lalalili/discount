@@ -67,5 +67,13 @@ composer update lalalili/discount
 Recommended requirement:
 
 ```json
-"lalalili/discount": "^2.1"
+"lalalili/discount": "^2.5"
 ```
+
+## 6) Current rollout notes
+
+- Publish the existing diagnostics baseline as `2.4.x` first: `PromotionDecision`, normalized skipped reasons, `promotion_refresh_signature`, pipeline metadata, and app input factories.
+- Release `2.5.x` after `2.4.x` is stable. `2.5.x` adds `PricingTrace` / `PricingTraceEntry` as public DTOs and keeps `CouponValidationResult::$pricingTrace` optional for backward compatibility.
+- Consumer order: update `cptw` and `aitehub` lock files/references to `2.4.x`, then update to `2.5.x` after app adapters are deployed.
+- Rollback: revert consumer constraint/lock to the last `2.4.x` tag. Coupon behavior remains in app adapters, so rollback does not require a DB migration.
+- Explicitly out of scope: DB audit log, moving coupon into promotion refresh, and changing `lalalili/laravelshoppingcart` public APIs.

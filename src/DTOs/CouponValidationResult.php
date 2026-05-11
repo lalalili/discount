@@ -13,6 +13,7 @@ final class CouponValidationResult
         public readonly float $finalTotal = 0.0,
         public readonly ?string $reason = null,
         public readonly ?string $reasonCode = null,
+        public readonly ?PricingTrace $pricingTrace = null,
     ) {
     }
 }
