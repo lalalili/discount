@@ -18,6 +18,7 @@ use Discount\Kernel\Engines\DefaultCouponCodeGenerator;
 use Discount\Kernel\Engines\DefaultCouponDiscountEngine;
 use Discount\Kernel\Engines\DefaultCouponEligibilityEngine;
 use Discount\Kernel\Engines\DefaultDiscountEngine;
+use Discount\Kernel\Support\CouponConditionPayloadFactory;
 use Illuminate\Support\ServiceProvider;
 
 final class DiscountServiceProvider extends ServiceProvider
@@ -33,6 +34,7 @@ final class DiscountServiceProvider extends ServiceProvider
         $this->app->singleton(CouponCodeGeneratorInterface::class, DefaultCouponCodeGenerator::class);
         $this->app->singleton(CouponDiscountEngineInterface::class, DefaultCouponDiscountEngine::class);
         $this->app->singleton(CouponApplicationServiceInterface::class, DefaultCouponApplicationService::class);
+        $this->app->singleton(CouponConditionPayloadFactory::class, CouponConditionPayloadFactory::class);
     }
 
     public function boot(): void

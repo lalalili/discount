@@ -79,18 +79,18 @@ final class PromotionDecision
     public function toArray(): array
     {
         return array_filter([
-            'status' => $this->status,
-            'scope' => $this->scope,
-            'line_id' => $this->lineId,
-            'product_id' => $this->productId,
-            'event_id' => $this->eventId,
-            'type' => $this->type,
-            'name' => $this->name,
-            'target' => $this->target,
+            'status'          => $this->status,
+            'scope'           => $this->scope,
+            'line_id'         => $this->lineId,
+            'product_id'      => $this->productId,
+            'event_id'        => $this->eventId,
+            'type'            => $this->type,
+            'name'            => $this->name,
+            'target'          => $this->target,
             'adjustment_type' => $this->adjustmentType,
-            'value' => $this->value,
-            'reason' => $this->reason,
-            'details' => $this->details,
+            'value'           => $this->value,
+            'reason'          => $this->reason,
+            'details'         => $this->details,
         ], static fn (mixed $value): bool => $value !== null && $value !== '' && $value !== []);
     }
 

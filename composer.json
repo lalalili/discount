@@ -3,16 +3,16 @@
     "description": "Config-driven discount and coupon kernel for Laravel projects.",
     "type": "library",
     "license": "proprietary",
-    "version": "2.5.1",
+    "version": "2.5.2",
     "require": {
-        "php": "^8.4",
+        "php": "^8.3",
         "illuminate/support": "^12.0|^13.0"
     },
     "require-dev": {
         "larastan/larastan": "^3.0",
         "pestphp/pest": "^4.0",
-        "phpunit/phpunit": "^12.0",
-        "phpstan/phpstan": "^2.1"
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^12.0"
     },
     "autoload": {
         "psr-4": {

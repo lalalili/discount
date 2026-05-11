@@ -75,6 +75,7 @@ Recommended requirement:
 - Publish the existing diagnostics baseline as `2.4.x` first: `PromotionDecision`, normalized skipped reasons, `promotion_refresh_signature`, pipeline metadata, and app input factories.
 - Release `2.5.x` after `2.4.x` is stable. `2.5.x` adds `PricingTrace` / `PricingTraceEntry` as public DTOs and keeps `CouponValidationResult::$pricingTrace` optional for backward compatibility.
 - Release `2.5.1` after the formatter helper commit is pushed. Tag only the app-adapter helper, README/CHANGELOG notes, and focused formatter tests; do not include local `vendor/` or generated `composer.lock` artifacts.
+- Release `2.5.2` after the coupon condition payload helper commit is pushed. Tag only the payload DTO/factory, README/CHANGELOG notes, and focused payload tests; do not include local `vendor/` or generated `composer.lock` artifacts.
 - Consumer order for `2.5.1`: tag `lalalili/discount`, update `aitehub` lock files to the tag, then confirm `cptw/packages/discount` remains byte-for-byte aligned with the tag while cptw uses the path repository.
 - Consumer order: update `cptw` and `aitehub` lock files/references to `2.4.x`, then update to `2.5.x` after app adapters are deployed.
 - Rollback: revert consumer constraint/lock to the last `2.4.x` tag. Coupon behavior remains in app adapters, so rollback does not require a DB migration.

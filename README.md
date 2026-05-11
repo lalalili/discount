@@ -12,6 +12,7 @@ This package provides reusable promotion engines, coupon application orchestrati
 - Coupon code generation (`CouponCodeGeneratorInterface`)
 - Coupon discount calculation (`CouponDiscountEngineInterface`)
 - Coupon validation orchestration (`CouponApplicationServiceInterface`)
+- Coupon condition payload generation for app cart adapters (`CouponConditionPayloadFactory`)
 
 Out of scope (kept in application adapter layer):
 
@@ -24,8 +25,8 @@ Out of scope (kept in application adapter layer):
 
 ## Requirements
 
-- PHP `^8.4`
-- Laravel `^12.0`
+- PHP `^8.3`
+- Laravel components `^12.0|^13.0`
 
 ## Public Interfaces
 
@@ -53,6 +54,8 @@ The package API is stable at interface level:
   - `valid`, `discount`, `finalTotal`, `reason`, `reasonCode`
 - `CouponValidationResult`
   - `eligible`, `coupon`, `discount`, `finalTotal`, `reason`, `reasonCode`, `pricingTrace`
+- `CouponConditionPayload`
+  - `type`, `target`, `value`, `order`, `attributes`
 - `PricingTrace`
   - list wrapper for `PricingTraceEntry`
 - `PricingTraceEntry`
@@ -98,6 +101,31 @@ Coupon cart conditions should include the applied entry in condition attributes:
 ]
 ```
 
+`Discount\Kernel\Support\CouponConditionPayloadFactory` provides a small app-adapter helper for checkout coupon conditions. It returns a plain `CouponConditionPayload` and does not depend on `lalalili/laravelshoppingcart`:
+
+```php
+use Discount\Kernel\Enums\CouponKind;
+use Discount\Kernel\Support\CouponConditionPayloadFactory;
+
+$payload = app(CouponConditionPayloadFactory::class)->make(
+    CouponKind::Promotion,
+    50,
+    $couponApplyEntry,
+);
+
+$conditionArgs = $payload->toArray([
+    'name' => __('cruds.coupon.promotion'),
+]);
+```
+
+Stable payload values:
+
+- `type`: `member_coupon` or `promotion_coupon`
+- `target`: `total`
+- `order`: `10` for member coupon, `11` for promotion coupon
+- `value`: negative numeric discount amount
+- `attributes.pricing_trace_entry`: `PricingTraceEntry::toArray()`
+
 Out of scope for this stage: DB audit logs, moving coupon processing into promotion refresh, and changing the public API of `lalalili/laravelshoppingcart`.
 
 ### Context Changes
@@ -127,7 +155,7 @@ In application `composer.json`:
     }
   ],
   "require": {
-    "lalalili/discount": "^2.1"
+    "lalalili/discount": "^2.5"
   }
 }
 ```
@@ -151,7 +179,7 @@ In application `composer.json`:
     }
   ],
   "require": {
-    "lalalili/discount": "^2.1"
+    "lalalili/discount": "^2.5"
   }
 }
 ```
@@ -197,6 +225,29 @@ $this->app->singleton(CouponRepositoryInterface::class, EloquentCouponRepository
 - `cart.gift_resolver`
 
 With this design, another project only needs config changes (type mapping, scope mapping, code template, cart role mapping) without rewriting engine logic.
+
+Package defaults only include the active event types used by the host app. Legacy event types such as `2` and `5` are not mapped by default.
+
+If another project still needs sequential or stackable discount behavior, define a custom event type in `event.type_role_map` and map it to `stackable_discount`.
+
+Example:
+
+```php
+'event' => [
+    'type_role_map' => [
+        901 => 'stackable_discount',
+    ],
+    'priorities' => [
+        'pricing' => [
+            'exclusive_price',
+            'exclusive_discount',
+            'group_rebate',
+            'single_discount',
+            'stackable_discount',
+        ],
+    ],
+],
+```
 
 ## Minimal Usage
 
@@ -372,12 +423,13 @@ Recommended `FIRST_ORDER (13)` dedup rule:
 
 Recommended deprecated runtime guard:
 
-- If coupon type in `[21,22]`, skip and log warning (for example `legacy_coupon_type_detected`).
+- If coupon type is `22`, skip and log warning (for example `legacy_coupon_type_detected`).
+- Keep `21` available if your app still supports LINE binding coupon issuance.
 
 ## Versioning Note
 
-Current package `composer.json` version is `2.4.0`.
-This release is a minor update from `2.3.x` and does not introduce breaking API changes.
+Current package `composer.json` version is `2.5.2`.
+This release is a minor update from `2.5.x` and does not introduce breaking API changes.
 See `CHANGELOG.md` for release notes and `RELEASING.md` for sync/tag SOP.
 
 ## Local Quality Checks
@@ -396,6 +448,10 @@ composer analyse
 3. Map local event/coupon enum values in config.
 4. Bind `CouponRepositoryInterface` to your adapter implementation.
 5. Set `cart.gift_resolver` (or `null` if gift not used).
-6. Keep issuing flows in app adapters (`register`, `birthday`, `first order`).
-7. Add runtime skip policy for deprecated coupon types.
-8. Run smoke tests for checkout pricing and coupon issuance.
+6. Build product/cart/user contexts from your local models.
+7. Wrap `CouponConditionPayloadFactory` in a local cart adapter that adds the condition name and instantiates your cart condition class.
+8. Add a local reason-message resolver for API/UI copy.
+9. Keep order lifecycle in the app layer: member coupon deactivation, promotion inventory decrement, and cancel-order restore.
+10. Keep issuing flows in app adapters (`register`, `birthday`, `first order`).
+11. Add runtime skip policy for deprecated coupon types if your data still contains legacy coupon types.
+12. Run smoke tests for checkout pricing, coupon application, order creation, inventory decrement, cancel restore, and coupon issuance.

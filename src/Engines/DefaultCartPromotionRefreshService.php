@@ -77,10 +77,10 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             cartAdjustments: $cartAdjustments,
             selectedGroupRebateEventIds: $selectedGroupRebateEventIds,
             metadata: [
-                'line_count' => count($input->lines),
+                'line_count'                  => count($input->lines),
                 'selected_group_rebate_count' => count($selectedGroupRebateEventIds),
-                'applied_count' => count($appliedPromotions),
-                'skipped_count' => count($skippedPromotions),
+                'applied_count'               => count($appliedPromotions),
+                'skipped_count'               => count($skippedPromotions),
             ],
             appliedPromotions: $appliedPromotions,
             skippedPromotions: $skippedPromotions,
@@ -127,13 +127,13 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
 
             $rebateTriggerItems[$line->productId] = [
                 'promotions' => $groupPromotions,
-                'meet' => $meet,
-                'event_ids' => array_values(array_filter(
+                'meet'       => $meet,
+                'event_ids'  => array_values(array_filter(
                     array_map(static fn (PromotionContext $promotion): ?int => $promotion->eventId, $eligiblePromotions),
                     static fn (?int $eventId): bool => $eventId !== null,
                 )),
                 'quantity' => $line->quantity,
-                'max' => $meet instanceof PromotionContext
+                'max'      => $meet instanceof PromotionContext
                     ? $this->maxRebateTriggerAmount($eligiblePromotions)
                     : 0,
             ];
@@ -314,8 +314,7 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
         array $itemAdjustmentsByLineId,
         string $giftFulfillment,
         array &$skippedPromotions,
-    ): array
-    {
+    ): array {
         $linesById = [];
         foreach ($lines as $line) {
             $linesById[$line->id] = $line;
@@ -371,14 +370,14 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
         float $lineAmount,
     ): array {
         $entry ??= [
-            'name' => (string) ($adjustment['name'] ?? ''),
-            'type' => (string) ($adjustment['type'] ?? ''),
-            'order' => (int) ($adjustment['order'] ?? 0),
-            'attributes' => $attributes,
-            'sum_amount' => 0.0,
+            'name'         => (string) ($adjustment['name'] ?? ''),
+            'type'         => (string) ($adjustment['type'] ?? ''),
+            'order'        => (int) ($adjustment['order'] ?? 0),
+            'attributes'   => $attributes,
+            'sum_amount'   => 0.0,
             'sum_quantity' => 0,
-            'products' => [],
-            'sort' => (int) ($attributes['sort'] ?? 0),
+            'products'     => [],
+            'sort'         => (int) ($attributes['sort'] ?? 0),
         ];
 
         $entry['sum_amount'] = (float) $entry['sum_amount'] + $lineAmount;
@@ -421,11 +420,11 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             $attributes['products'] = $rebate['products'];
 
             $adjustments[] = [
-                'name' => (string) $rebate['name'],
-                'type' => 'rebate',
-                'target' => 'total',
-                'value' => '-' . $this->formatNumber($rebateAmount),
-                'order' => $this->resolveTypeOrder($this->nullableInt($attributes['type'] ?? null) ?? (int) $rebate['order']),
+                'name'       => (string) $rebate['name'],
+                'type'       => 'rebate',
+                'target'     => 'total',
+                'value'      => '-' . $this->formatNumber($rebateAmount),
+                'order'      => $this->resolveTypeOrder($this->nullableInt($attributes['type'] ?? null) ?? (int) $rebate['order']),
                 'attributes' => $attributes,
             ];
         }
@@ -474,11 +473,11 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             $attributes['fulfillment'] = $giftFulfillment === 'add_item' ? 'add_item' : 'condition_only';
 
             $adjustments[] = [
-                'name' => (string) $gift['name'],
-                'type' => 'gift',
-                'target' => 'total',
-                'value' => 0,
-                'order' => $this->resolveTypeOrder($this->firstConfiguredType('gift_types', (int) $gift['order'])),
+                'name'       => (string) $gift['name'],
+                'type'       => 'gift',
+                'target'     => 'total',
+                'value'      => 0,
+                'order'      => $this->resolveTypeOrder($this->firstConfiguredType('gift_types', (int) $gift['order'])),
                 'attributes' => $attributes,
             ];
         }
@@ -503,15 +502,15 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             }
 
             $applied[] = [
-                'scope' => 'line',
-                'line_id' => $line->id,
-                'product_id' => $line->productId,
-                'event_id' => $eventId,
-                'type' => $this->nullableInt($attributes['type'] ?? null),
-                'target' => (string) ($adjustment['target'] ?? 'item'),
+                'scope'           => 'line',
+                'line_id'         => $line->id,
+                'product_id'      => $line->productId,
+                'event_id'        => $eventId,
+                'type'            => $this->nullableInt($attributes['type'] ?? null),
+                'target'          => (string) ($adjustment['target'] ?? 'item'),
                 'adjustment_type' => (string) ($adjustment['type'] ?? ''),
-                'name' => (string) ($adjustment['name'] ?? ''),
-                'value' => $adjustment['value'] ?? 0,
+                'name'            => (string) ($adjustment['name'] ?? ''),
+                'value'           => $adjustment['value'] ?? 0,
             ];
         }
 
@@ -535,13 +534,13 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             }
 
             $applied[] = [
-                'scope' => 'cart',
-                'event_id' => $eventId,
-                'type' => $this->nullableInt($attributes['type'] ?? null),
-                'target' => $adjustment['target'],
+                'scope'           => 'cart',
+                'event_id'        => $eventId,
+                'type'            => $this->nullableInt($attributes['type'] ?? null),
+                'target'          => $adjustment['target'],
                 'adjustment_type' => $adjustment['type'],
-                'name' => $adjustment['name'],
-                'value' => $adjustment['value'],
+                'name'            => $adjustment['name'],
+                'value'           => $adjustment['value'],
             ];
         }
 
@@ -586,13 +585,13 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             }
 
             $skipped[] = [
-                'scope' => 'line',
-                'line_id' => $line->id,
+                'scope'      => 'line',
+                'line_id'    => $line->id,
                 'product_id' => $line->productId,
-                'event_id' => $promotion->eventId,
-                'type' => $promotion->type,
-                'name' => $promotion->name ?? '',
-                'reason' => $reason,
+                'event_id'   => $promotion->eventId,
+                'type'       => $promotion->type,
+                'name'       => $promotion->name ?? '',
+                'reason'     => $reason,
             ];
         }
 
@@ -608,12 +607,12 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
         $attributes = is_array($promotion['attributes'] ?? null) ? $promotion['attributes'] : [];
 
         return [
-            'scope' => 'cart',
-            'event_id' => $this->nullableInt($attributes['event_id'] ?? null),
-            'type' => $this->nullableInt($attributes['type'] ?? null),
-            'name' => (string) ($promotion['name'] ?? ''),
-            'reason' => $reason,
-            'sum_amount' => (float) ($promotion['sum_amount'] ?? 0),
+            'scope'        => 'cart',
+            'event_id'     => $this->nullableInt($attributes['event_id'] ?? null),
+            'type'         => $this->nullableInt($attributes['type'] ?? null),
+            'name'         => (string) ($promotion['name'] ?? ''),
+            'reason'       => $reason,
+            'sum_amount'   => (float) ($promotion['sum_amount'] ?? 0),
             'sum_quantity' => (int) ($promotion['sum_quantity'] ?? 0),
         ];
     }
@@ -638,11 +637,11 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             $subtotalAfterItemAdjustments += $lineSubtotalAfter;
 
             $lineTotals[] = [
-                'line_id' => $line->id,
-                'product_id' => $line->productId,
-                'quantity' => $line->quantity,
-                'unit_price' => $line->unitPrice,
-                'line_subtotal_before' => $lineSubtotalBefore,
+                'line_id'                              => $line->id,
+                'product_id'                           => $line->productId,
+                'quantity'                             => $line->quantity,
+                'unit_price'                           => $line->unitPrice,
+                'line_subtotal_before'                 => $lineSubtotalBefore,
                 'line_subtotal_after_item_adjustments' => $lineSubtotalAfter,
             ];
         }
@@ -657,11 +656,11 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
         }
 
         return [
-            'lines' => $lineTotals,
-            'subtotal_before' => $subtotalBefore,
+            'lines'                           => $lineTotals,
+            'subtotal_before'                 => $subtotalBefore,
             'subtotal_after_item_adjustments' => $subtotalAfterItemAdjustments,
-            'cart_rebate_amount' => $cartRebateAmount,
-            'total_after_cart_rebates' => max(0.0, $subtotalAfterItemAdjustments - $cartRebateAmount),
+            'cart_rebate_amount'              => $cartRebateAmount,
+            'total_after_cart_rebates'        => max(0.0, $subtotalAfterItemAdjustments - $cartRebateAmount),
         ];
     }
 

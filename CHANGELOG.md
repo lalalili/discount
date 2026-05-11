@@ -2,6 +2,18 @@
 
 All notable changes to `lalalili/discount` are documented in this file.
 
+## [2.5.2] - 2026-05-11
+
+### Added
+
+- `CouponConditionPayload` and `CouponConditionPayloadFactory` for app adapters to build stable checkout coupon condition payloads without depending on `lalalili/laravelshoppingcart`.
+- README onboarding notes for new projects integrating coupon condition payloads, pricing trace entries, and app-layer order lifecycle responsibilities.
+
+### Compatibility
+
+- No existing interface changes.
+- Coupon condition payload generation remains an app-adapter helper; order lifecycle, persistence, and shopping cart mutations remain out of scope.
+
 ## [2.5.1] - 2026-05-11
 
 ### Added

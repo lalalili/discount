@@ -39,8 +39,8 @@ final class PromotionDecisionReason
             'cart_rebate_threshold_not_met',
             'gift_threshold_not_met',
             'group_rebate_threshold_not_met' => self::THRESHOLD_NOT_MET,
-            'group_rebate_not_selected' => self::NOT_SELECTED,
-            default => self::NOT_SELECTED,
+            'group_rebate_not_selected'      => self::NOT_SELECTED,
+            default                          => self::NOT_SELECTED,
         };
     }
 }

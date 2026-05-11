@@ -4,10 +4,8 @@ return [
     'event' => [
         'type_role_map' => [
             1  => 'single_discount',
-            2  => 'stackable_discount',
             3  => 'gift',
             4  => 'cart_rebate',
-            5  => 'cart_rebate',
             6  => 'group_rebate',
             7  => 'exclusive_discount',
             8  => 'exclusive_price',
@@ -21,14 +19,11 @@ return [
                 'exclusive_discount',
                 'group_rebate',
                 'single_discount',
-                'stackable_discount',
             ],
             'type_order' => [
                 1  => 1,
-                2  => 2,
                 3  => 3,
                 4  => 4,
-                5  => 5,
                 6  => 6,
                 7  => 7,
                 8  => 8,
@@ -75,11 +70,11 @@ return [
     ],
     'cart' => [
         'roles' => [
-            'discount_types'     => [1, 2, 7, 8, 20, 21],
+            'discount_types'     => [1, 7, 8, 20, 21],
             'fixed_price_types'  => [8, 21],
             'group_rebate_types' => [6],
             'gift_types'         => [3],
-            'rebate_types'       => [4, 5],
+            'rebate_types'       => [4],
         ],
         'gift_resolver' => null,
     ],
