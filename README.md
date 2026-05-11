@@ -72,6 +72,14 @@ Enum values currently emitted by the package/app adapters:
 
 `CouponValidationResult::$pricingTrace` is optional and defaults to `null` for backward compatibility. `DefaultCouponApplicationService` populates a `coupon_validate` entry for eligible and failed validation outcomes. `CouponDiscountResult` intentionally does not carry trace data; application services combine discount and validation trace when they apply a coupon.
 
+`Discount\Kernel\Support\PricingTraceFormatter` provides stable helpers for app adapters:
+
+- `normalize()` converts `PricingTrace`, `PricingTraceEntry`, single-entry arrays, and entry lists into a list of arrays.
+- `mergeLatestByIdentity()` replaces duplicate entries by `stage/source/kind/id-or-code` and trims the list for cart context storage.
+- `summarize()` returns compact counts by stage, source, status, and reason code for pipeline metadata.
+
+Release note for `2.5.1`: the formatter is a public app-adapter helper. It does not change the `PricingTrace` / `PricingTraceEntry` array shape and does not add persistence. Consumer apps should update lock files after the tag, then remove long-lived duplicate merge/summary logic once the helper is available from `vendor/`.
+
 Application cart adapters should store checkout coupon trace under cart context metadata such as:
 
 ```php

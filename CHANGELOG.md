@@ -2,6 +2,17 @@
 
 All notable changes to `lalalili/discount` are documented in this file.
 
+## [2.5.1] - 2026-05-11
+
+### Added
+
+- `PricingTraceFormatter` for app adapters to normalize trace payloads, replace duplicate trace entries by identity, trim cart-context storage, and summarize trace counts for pipeline metadata.
+
+### Compatibility
+
+- No DTO wire-shape changes.
+- `PricingTraceFormatter` is an adapter helper; DB audit logs, coupon promotion-refresh migration, and shopping cart public API changes remain out of scope.
+
 ## [2.1.0] - 2026-02-18
 
 ### Added
