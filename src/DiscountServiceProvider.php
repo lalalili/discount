@@ -19,6 +19,7 @@ use Discount\Kernel\Engines\DefaultCouponDiscountEngine;
 use Discount\Kernel\Engines\DefaultCouponEligibilityEngine;
 use Discount\Kernel\Engines\DefaultDiscountEngine;
 use Discount\Kernel\Support\CouponConditionPayloadFactory;
+use Discount\Kernel\Support\PromotionRefreshFingerprint;
 use Illuminate\Support\ServiceProvider;
 
 final class DiscountServiceProvider extends ServiceProvider
@@ -35,6 +36,7 @@ final class DiscountServiceProvider extends ServiceProvider
         $this->app->singleton(CouponDiscountEngineInterface::class, DefaultCouponDiscountEngine::class);
         $this->app->singleton(CouponApplicationServiceInterface::class, DefaultCouponApplicationService::class);
         $this->app->singleton(CouponConditionPayloadFactory::class, CouponConditionPayloadFactory::class);
+        $this->app->singleton(PromotionRefreshFingerprint::class, PromotionRefreshFingerprint::class);
     }
 
     public function boot(): void
