@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/Pest.php';
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\CartLineContext;
-use Discount\Kernel\Contexts\PromotionContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\DTOs\CartPromotionRefreshInput;
-use Discount\Kernel\Support\PromotionRefreshFingerprint;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\CartLineContext;
+use Lalalili\Discount\Contexts\PromotionContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\DTOs\CartPromotionRefreshInput;
+use Lalalili\Discount\Support\PromotionRefreshFingerprint;
 
 it('builds stable promotion versions from promotion ids sort and timestamps', function (): void {
     $fingerprint = new PromotionRefreshFingerprint();

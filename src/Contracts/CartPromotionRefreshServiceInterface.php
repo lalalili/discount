@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Contracts;
+namespace Lalalili\Discount\Contracts;
 
-use Discount\Kernel\DTOs\CartPromotionRefreshInput;
-use Discount\Kernel\DTOs\CartPromotionRefreshResult;
+use Lalalili\Discount\DTOs\CartPromotionRefreshInput;
+use Lalalili\Discount\DTOs\CartPromotionRefreshResult;
 
 interface CartPromotionRefreshServiceInterface
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Contexts;
+namespace Lalalili\Discount\Contexts;
 
 final class CartLineContext
 {

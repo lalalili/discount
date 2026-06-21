@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Engines;
+namespace Lalalili\Discount\Engines;
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\PromotionContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\Contracts\CartPromotionEngineInterface;
-use Discount\Kernel\Contracts\GiftResolverInterface;
-use Discount\Kernel\DTOs\CartAdjustmentResult;
-use Discount\Kernel\Resolvers\NullGiftResolver;
-use Discount\Kernel\Support\DiscountConfig;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\PromotionContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\Contracts\CartPromotionEngineInterface;
+use Lalalili\Discount\Contracts\GiftResolverInterface;
+use Lalalili\Discount\DTOs\CartAdjustmentResult;
+use Lalalili\Discount\Resolvers\NullGiftResolver;
+use Lalalili\Discount\Support\DiscountConfig;
 
 final class DefaultCartPromotionEngine implements CartPromotionEngineInterface
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Discount\Kernel\Tests\Support\StandaloneConfig;
+use Lalalili\Discount\Tests\Support\StandaloneConfig;
 use Illuminate\Container\Container;
 
 require_once __DIR__ . '/Support/StandaloneConfig.php';

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/Pest.php';
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\CartLineContext;
-use Discount\Kernel\Contexts\PromotionContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\Contracts\GiftResolverInterface;
-use Discount\Kernel\DTOs\CartPromotionRefreshInput;
-use Discount\Kernel\Engines\DefaultCartPromotionRefreshService;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\CartLineContext;
+use Lalalili\Discount\Contexts\PromotionContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\Contracts\GiftResolverInterface;
+use Lalalili\Discount\DTOs\CartPromotionRefreshInput;
+use Lalalili\Discount\Engines\DefaultCartPromotionRefreshService;
 
 final class RefreshGiftResolverForPackageTest implements GiftResolverInterface
 {

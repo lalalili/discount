@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Support;
+namespace Lalalili\Discount\Support;
 
 use BackedEnum;
-use Discount\Kernel\Contexts\CartLineContext;
-use Discount\Kernel\Contexts\PromotionContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\DTOs\CartPromotionRefreshInput;
+use Lalalili\Discount\Contexts\CartLineContext;
+use Lalalili\Discount\Contexts\PromotionContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\DTOs\CartPromotionRefreshInput;
 
 final class PromotionRefreshFingerprint
 {

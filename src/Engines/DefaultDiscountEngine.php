@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Engines;
+namespace Lalalili\Discount\Engines;
 
-use Discount\Kernel\Contexts\ProductContext;
-use Discount\Kernel\Contexts\PromotionContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\Contracts\DiscountEngineInterface;
-use Discount\Kernel\DTOs\PriceResult;
-use Discount\Kernel\Support\DiscountConfig;
+use Lalalili\Discount\Contexts\ProductContext;
+use Lalalili\Discount\Contexts\PromotionContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\Contracts\DiscountEngineInterface;
+use Lalalili\Discount\DTOs\PriceResult;
+use Lalalili\Discount\Support\DiscountConfig;
 
 final class DefaultDiscountEngine implements DiscountEngineInterface
 {

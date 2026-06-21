@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Support;
+namespace Lalalili\Discount\Support;
 
 use Throwable;
 

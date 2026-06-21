@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Engines;
+namespace Lalalili\Discount\Engines;
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\CouponContext;
-use Discount\Kernel\Contexts\UserContext;
-use Discount\Kernel\Contracts\CouponEligibilityInterface;
-use Discount\Kernel\DTOs\EligibilityResult;
-use Discount\Kernel\Support\DiscountConfig;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\CouponContext;
+use Lalalili\Discount\Contexts\UserContext;
+use Lalalili\Discount\Contracts\CouponEligibilityInterface;
+use Lalalili\Discount\DTOs\EligibilityResult;
+use Lalalili\Discount\Support\DiscountConfig;
 
 final class DefaultCouponEligibilityEngine implements CouponEligibilityInterface
 {

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Resolvers;
+namespace Lalalili\Discount\Resolvers;
 
-use Discount\Kernel\Contracts\GiftResolverInterface;
+use Lalalili\Discount\Contracts\GiftResolverInterface;
 
 final class NullGiftResolver implements GiftResolverInterface
 {

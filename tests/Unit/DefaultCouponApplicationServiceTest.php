@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/Pest.php';
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\UserContext;
-use Discount\Kernel\Contracts\CouponRepositoryInterface;
-use Discount\Kernel\DTOs\CouponData;
-use Discount\Kernel\Engines\DefaultCouponApplicationService;
-use Discount\Kernel\Enums\CouponAmountMode;
-use Discount\Kernel\Enums\CouponKind;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\UserContext;
+use Lalalili\Discount\Contracts\CouponRepositoryInterface;
+use Lalalili\Discount\DTOs\CouponData;
+use Lalalili\Discount\Engines\DefaultCouponApplicationService;
+use Lalalili\Discount\Enums\CouponAmountMode;
+use Lalalili\Discount\Enums\CouponKind;
 
 final class InMemoryCouponRepositoryForPackageTest implements CouponRepositoryInterface
 {

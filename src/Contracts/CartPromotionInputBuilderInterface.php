@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Contracts;
+namespace Lalalili\Discount\Contracts;
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\DTOs\CartPromotionRefreshInput;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\DTOs\CartPromotionRefreshInput;
 
 interface CartPromotionInputBuilderInterface
 {
     /**
-     * @return list<\Discount\Kernel\Contexts\CartLineContext>
+     * @return list<\Lalalili\Discount\Contexts\CartLineContext>
      */
     public function lines(): array;
 
     /**
-     * @return array<int|string, \Discount\Kernel\Contexts\PromotionSet>
+     * @return array<int|string, \Lalalili\Discount\Contexts\PromotionSet>
      */
     public function promotionSetsByProductId(): array;
 

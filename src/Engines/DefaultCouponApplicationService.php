@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Engines;
+namespace Lalalili\Discount\Engines;
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\CouponContext;
-use Discount\Kernel\Contexts\UserContext;
-use Discount\Kernel\Contracts\CouponApplicationServiceInterface;
-use Discount\Kernel\Contracts\CouponDiscountEngineInterface;
-use Discount\Kernel\Contracts\CouponEligibilityInterface;
-use Discount\Kernel\Contracts\CouponRepositoryInterface;
-use Discount\Kernel\DTOs\CouponValidationResult;
-use Discount\Kernel\DTOs\PricingTrace;
-use Discount\Kernel\DTOs\PricingTraceEntry;
-use Discount\Kernel\Enums\CouponKind;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\CouponContext;
+use Lalalili\Discount\Contexts\UserContext;
+use Lalalili\Discount\Contracts\CouponApplicationServiceInterface;
+use Lalalili\Discount\Contracts\CouponDiscountEngineInterface;
+use Lalalili\Discount\Contracts\CouponEligibilityInterface;
+use Lalalili\Discount\Contracts\CouponRepositoryInterface;
+use Lalalili\Discount\DTOs\CouponValidationResult;
+use Lalalili\Discount\DTOs\PricingTrace;
+use Lalalili\Discount\DTOs\PricingTraceEntry;
+use Lalalili\Discount\Enums\CouponKind;
 use RuntimeException;
 
 final class DefaultCouponApplicationService implements CouponApplicationServiceInterface
@@ -178,7 +178,7 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
         CouponKind $kind,
         string $code,
         string $status,
-        ?\Discount\Kernel\DTOs\CouponData $coupon = null,
+        ?\Lalalili\Discount\DTOs\CouponData $coupon = null,
         int|float|string|null $amount = null,
         ?float $finalTotal = null,
         ?string $reason = null,

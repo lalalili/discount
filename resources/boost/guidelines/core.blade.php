@@ -4,9 +4,9 @@
 
 ### Extension Points
 
-- Bind `Discount\Kernel\Contracts\CouponRepositoryInterface` in the host app to adapt coupon storage.
-- Implement `Discount\Kernel\Contracts\PromotionContextMapperInterface` in the host app to map campaign/event models into `PromotionContext`.
-- Use `Discount\Kernel\Support\PromotionRefreshFingerprint` to compute promotion refresh signatures; pass only host attributes that should affect pricing.
+- Bind `Lalalili\Discount\Contracts\CouponRepositoryInterface` in the host app to adapt coupon storage.
+- Implement `Lalalili\Discount\Contracts\PromotionContextMapperInterface` in the host app to map campaign/event models into `PromotionContext`.
+- Use `Lalalili\Discount\Support\PromotionRefreshFingerprint` to compute promotion refresh signatures; pass only host attributes that should affect pricing.
 - Use `CartPromotionRefreshServiceInterface` for cart promotion refreshes and apply returned item/cart adjustments in the host cart layer.
 
 ### Boundaries

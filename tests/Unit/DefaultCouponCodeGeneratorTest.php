@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/Pest.php';
 
-use Discount\Kernel\Contexts\CodeContext;
-use Discount\Kernel\Engines\DefaultCouponCodeGenerator;
+use Lalalili\Discount\Contexts\CodeContext;
+use Lalalili\Discount\Engines\DefaultCouponCodeGenerator;
 
 it('generates code by template and prefix configuration', function (): void {
     $generator = new DefaultCouponCodeGenerator();

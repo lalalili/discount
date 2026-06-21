@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Contracts;
+namespace Lalalili\Discount\Contracts;
 
-use Discount\Kernel\DTOs\CouponData;
-use Discount\Kernel\Enums\CouponKind;
+use Lalalili\Discount\DTOs\CouponData;
+use Lalalili\Discount\Enums\CouponKind;
 
 interface CouponRepositoryInterface
 {

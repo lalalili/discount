@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Engines;
+namespace Lalalili\Discount\Engines;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use Discount\Kernel\Contexts\CodeContext;
-use Discount\Kernel\Contracts\CouponCodeGeneratorInterface;
-use Discount\Kernel\Support\DiscountConfig;
+use Lalalili\Discount\Contexts\CodeContext;
+use Lalalili\Discount\Contracts\CouponCodeGeneratorInterface;
+use Lalalili\Discount\Support\DiscountConfig;
 use RuntimeException;
 
 final class DefaultCouponCodeGenerator implements CouponCodeGeneratorInterface

@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel;
+namespace Lalalili\Discount;
 
-use Discount\Kernel\Contracts\CartPromotionEngineInterface;
-use Discount\Kernel\Contracts\CartPromotionRefreshServiceInterface;
-use Discount\Kernel\Contracts\CouponApplicationServiceInterface;
-use Discount\Kernel\Contracts\CouponCodeGeneratorInterface;
-use Discount\Kernel\Contracts\CouponDiscountEngineInterface;
-use Discount\Kernel\Contracts\CouponEligibilityInterface;
-use Discount\Kernel\Contracts\DiscountEngineInterface;
-use Discount\Kernel\Engines\DefaultCartPromotionEngine;
-use Discount\Kernel\Engines\DefaultCartPromotionRefreshService;
-use Discount\Kernel\Engines\DefaultCouponApplicationService;
-use Discount\Kernel\Engines\DefaultCouponCodeGenerator;
-use Discount\Kernel\Engines\DefaultCouponDiscountEngine;
-use Discount\Kernel\Engines\DefaultCouponEligibilityEngine;
-use Discount\Kernel\Engines\DefaultDiscountEngine;
-use Discount\Kernel\Support\CouponConditionPayloadFactory;
-use Discount\Kernel\Support\PromotionRefreshFingerprint;
+use Lalalili\Discount\Contracts\CartPromotionEngineInterface;
+use Lalalili\Discount\Contracts\CartPromotionRefreshServiceInterface;
+use Lalalili\Discount\Contracts\CouponApplicationServiceInterface;
+use Lalalili\Discount\Contracts\CouponCodeGeneratorInterface;
+use Lalalili\Discount\Contracts\CouponDiscountEngineInterface;
+use Lalalili\Discount\Contracts\CouponEligibilityInterface;
+use Lalalili\Discount\Contracts\DiscountEngineInterface;
+use Lalalili\Discount\Engines\DefaultCartPromotionEngine;
+use Lalalili\Discount\Engines\DefaultCartPromotionRefreshService;
+use Lalalili\Discount\Engines\DefaultCouponApplicationService;
+use Lalalili\Discount\Engines\DefaultCouponCodeGenerator;
+use Lalalili\Discount\Engines\DefaultCouponDiscountEngine;
+use Lalalili\Discount\Engines\DefaultCouponEligibilityEngine;
+use Lalalili\Discount\Engines\DefaultDiscountEngine;
+use Lalalili\Discount\Support\CouponConditionPayloadFactory;
+use Lalalili\Discount\Support\PromotionRefreshFingerprint;
 use Illuminate\Support\ServiceProvider;
 
 final class DiscountServiceProvider extends ServiceProvider

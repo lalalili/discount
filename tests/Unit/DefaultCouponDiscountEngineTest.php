@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/Pest.php';
 
-use Discount\Kernel\Contexts\CouponContext;
-use Discount\Kernel\Engines\DefaultCouponDiscountEngine;
-use Discount\Kernel\Enums\CouponAmountMode;
+use Lalalili\Discount\Contexts\CouponContext;
+use Lalalili\Discount\Engines\DefaultCouponDiscountEngine;
+use Lalalili\Discount\Enums\CouponAmountMode;
 
 it('calculates fixed and rate discounts', function (): void {
     $engine = new DefaultCouponDiscountEngine();

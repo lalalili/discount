@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/Pest.php';
 
-use Discount\Kernel\DTOs\CartPromotionRefreshResult;
-use Discount\Kernel\DTOs\PricingTrace;
-use Discount\Kernel\DTOs\PricingTraceEntry;
-use Discount\Kernel\DTOs\PromotionDecision;
-use Discount\Kernel\Support\PricingTraceFormatter;
+use Lalalili\Discount\DTOs\CartPromotionRefreshResult;
+use Lalalili\Discount\DTOs\PricingTrace;
+use Lalalili\Discount\DTOs\PricingTraceEntry;
+use Lalalili\Discount\DTOs\PromotionDecision;
+use Lalalili\Discount\Support\PricingTraceFormatter;
 
 it('keeps pricing trace entry output stable', function (): void {
     $entry = new PricingTraceEntry(

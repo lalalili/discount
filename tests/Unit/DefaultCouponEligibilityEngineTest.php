@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/Pest.php';
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\CouponContext;
-use Discount\Kernel\Contexts\UserContext;
-use Discount\Kernel\Engines\DefaultCouponEligibilityEngine;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\CouponContext;
+use Lalalili\Discount\Contexts\UserContext;
+use Lalalili\Discount\Engines\DefaultCouponEligibilityEngine;
 
 it('passes all-scope coupon without trigger amount', function (): void {
     $engine = new DefaultCouponEligibilityEngine();

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Engines;
+namespace Lalalili\Discount\Engines;
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\CartLineContext;
-use Discount\Kernel\Contexts\PromotionContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\Contracts\CartPromotionEngineInterface;
-use Discount\Kernel\Contracts\CartPromotionRefreshServiceInterface;
-use Discount\Kernel\DTOs\CartPromotionRefreshInput;
-use Discount\Kernel\DTOs\CartPromotionRefreshResult;
-use Discount\Kernel\DTOs\PromotionDecisionReason;
-use Discount\Kernel\Support\DiscountConfig;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\CartLineContext;
+use Lalalili\Discount\Contexts\PromotionContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\Contracts\CartPromotionEngineInterface;
+use Lalalili\Discount\Contracts\CartPromotionRefreshServiceInterface;
+use Lalalili\Discount\DTOs\CartPromotionRefreshInput;
+use Lalalili\Discount\DTOs\CartPromotionRefreshResult;
+use Lalalili\Discount\DTOs\PromotionDecisionReason;
+use Lalalili\Discount\Support\DiscountConfig;
 
 final class DefaultCartPromotionRefreshService implements CartPromotionRefreshServiceInterface
 {

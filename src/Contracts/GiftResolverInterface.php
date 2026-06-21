@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Contracts;
+namespace Lalalili\Discount\Contracts;
 
 interface GiftResolverInterface
 {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Support;
+namespace Lalalili\Discount\Support;
 
-use Discount\Kernel\DTOs\PricingTrace;
-use Discount\Kernel\DTOs\PricingTraceEntry;
+use Lalalili\Discount\DTOs\PricingTrace;
+use Lalalili\Discount\DTOs\PricingTraceEntry;
 
 final class PricingTraceFormatter
 {

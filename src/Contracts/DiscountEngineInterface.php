@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Contracts;
+namespace Lalalili\Discount\Contracts;
 
-use Discount\Kernel\Contexts\ProductContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\DTOs\PriceResult;
+use Lalalili\Discount\Contexts\ProductContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\DTOs\PriceResult;
 
 interface DiscountEngineInterface
 {

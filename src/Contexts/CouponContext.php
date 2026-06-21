@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Contexts;
+namespace Lalalili\Discount\Contexts;
 
-use Discount\Kernel\Enums\CouponAmountMode;
+use Lalalili\Discount\Enums\CouponAmountMode;
 
 final class CouponContext
 {

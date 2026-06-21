@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/Pest.php';
 
-use Discount\Kernel\DTOs\PricingTraceEntry;
-use Discount\Kernel\Enums\CouponKind;
-use Discount\Kernel\Support\CouponConditionPayloadFactory;
+use Lalalili\Discount\DTOs\PricingTraceEntry;
+use Lalalili\Discount\Enums\CouponKind;
+use Lalalili\Discount\Support\CouponConditionPayloadFactory;
 
 it('builds stable member coupon condition payloads for app adapters', function (): void {
     $entry = new PricingTraceEntry(

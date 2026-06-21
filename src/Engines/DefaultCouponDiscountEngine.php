@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Engines;
+namespace Lalalili\Discount\Engines;
 
-use Discount\Kernel\Contexts\CouponContext;
-use Discount\Kernel\Contracts\CouponDiscountEngineInterface;
-use Discount\Kernel\DTOs\CouponDiscountResult;
-use Discount\Kernel\Enums\CouponAmountMode;
+use Lalalili\Discount\Contexts\CouponContext;
+use Lalalili\Discount\Contracts\CouponDiscountEngineInterface;
+use Lalalili\Discount\DTOs\CouponDiscountResult;
+use Lalalili\Discount\Enums\CouponAmountMode;
 
 final class DefaultCouponDiscountEngine implements CouponDiscountEngineInterface
 {

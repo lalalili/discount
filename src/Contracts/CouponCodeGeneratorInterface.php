@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Contracts;
+namespace Lalalili\Discount\Contracts;
 
-use Discount\Kernel\Contexts\CodeContext;
+use Lalalili\Discount\Contexts\CodeContext;
 
 interface CouponCodeGeneratorInterface
 {

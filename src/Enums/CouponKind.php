@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Enums;
+namespace Lalalili\Discount\Enums;
 
 enum CouponKind: string
 {

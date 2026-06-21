@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Contracts;
+namespace Lalalili\Discount\Contracts;
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\UserContext;
-use Discount\Kernel\DTOs\CouponValidationResult;
-use Discount\Kernel\Enums\CouponKind;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\UserContext;
+use Lalalili\Discount\DTOs\CouponValidationResult;
+use Lalalili\Discount\Enums\CouponKind;
 
 interface CouponApplicationServiceInterface
 {

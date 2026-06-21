@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Contracts;
+namespace Lalalili\Discount\Contracts;
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\DTOs\CartAdjustmentResult;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\DTOs\CartAdjustmentResult;
 
 interface CartPromotionEngineInterface
 {

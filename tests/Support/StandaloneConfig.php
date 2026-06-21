@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Tests\Support;
+namespace Lalalili\Discount\Tests\Support;
 
 final class StandaloneConfig
 {

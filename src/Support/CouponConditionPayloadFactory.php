@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\Support;
+namespace Lalalili\Discount\Support;
 
-use Discount\Kernel\DTOs\CouponConditionPayload;
-use Discount\Kernel\DTOs\PricingTraceEntry;
-use Discount\Kernel\Enums\CouponKind;
+use Lalalili\Discount\DTOs\CouponConditionPayload;
+use Lalalili\Discount\DTOs\PricingTraceEntry;
+use Lalalili\Discount\Enums\CouponKind;
 
 final class CouponConditionPayloadFactory
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\DTOs;
+namespace Lalalili\Discount\DTOs;
 
 final class PromotionDecision
 {

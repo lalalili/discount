@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\DTOs;
+namespace Lalalili\Discount\DTOs;
 
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\CartLineContext;
-use Discount\Kernel\Contexts\PromotionSet;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\CartLineContext;
+use Lalalili\Discount\Contexts\PromotionSet;
 
 final class CartPromotionRefreshInput
 {

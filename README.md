@@ -75,7 +75,7 @@ Enum values currently emitted by the package/app adapters:
 
 `CouponValidationResult::$pricingTrace` is optional and defaults to `null` for backward compatibility. `DefaultCouponApplicationService` populates a `coupon_validate` entry for eligible and failed validation outcomes. `CouponDiscountResult` intentionally does not carry trace data; application services combine discount and validation trace when they apply a coupon.
 
-`Discount\Kernel\Support\PricingTraceFormatter` provides stable helpers for app adapters:
+`Lalalili\Discount\Support\PricingTraceFormatter` provides stable helpers for app adapters:
 
 - `normalize()` converts `PricingTrace`, `PricingTraceEntry`, single-entry arrays, and entry lists into a list of arrays.
 - `mergeLatestByIdentity()` replaces duplicate entries by `stage/source/kind/id-or-code` and trims the list for cart context storage.
@@ -101,11 +101,11 @@ Coupon cart conditions should include the applied entry in condition attributes:
 ]
 ```
 
-`Discount\Kernel\Support\CouponConditionPayloadFactory` provides a small app-adapter helper for checkout coupon conditions. It returns a plain `CouponConditionPayload` and does not depend on `lalalili/laravelshoppingcart`:
+`Lalalili\Discount\Support\CouponConditionPayloadFactory` provides a small app-adapter helper for checkout coupon conditions. It returns a plain `CouponConditionPayload` and does not depend on `lalalili/laravelshoppingcart`:
 
 ```php
-use Discount\Kernel\Enums\CouponKind;
-use Discount\Kernel\Support\CouponConditionPayloadFactory;
+use Lalalili\Discount\Enums\CouponKind;
+use Lalalili\Discount\Support\CouponConditionPayloadFactory;
 
 $payload = app(CouponConditionPayloadFactory::class)->make(
     CouponKind::Promotion,
@@ -205,7 +205,7 @@ The package reads mappings from `config/discount.php`.
 To use `CouponApplicationServiceInterface`, your app must bind `CouponRepositoryInterface`:
 
 ```php
-use Discount\Kernel\Contracts\CouponRepositoryInterface;
+use Lalalili\Discount\Contracts\CouponRepositoryInterface;
 use App\Services\Events\Support\EloquentCouponRepository;
 
 $this->app->singleton(CouponRepositoryInterface::class, EloquentCouponRepository::class);
@@ -254,10 +254,10 @@ Example:
 ### Product pricing (79折)
 
 ```php
-use Discount\Kernel\Contexts\ProductContext;
-use Discount\Kernel\Contexts\PromotionContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\Engines\DefaultDiscountEngine;
+use Lalalili\Discount\Contexts\ProductContext;
+use Lalalili\Discount\Contexts\PromotionContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\Engines\DefaultDiscountEngine;
 
 $engine = new DefaultDiscountEngine();
 
@@ -274,9 +274,9 @@ $price = $result->price; // 790
 ### Coupon discount calculation (fixed + rate)
 
 ```php
-use Discount\Kernel\Contexts\CouponContext;
-use Discount\Kernel\Engines\DefaultCouponDiscountEngine;
-use Discount\Kernel\Enums\CouponAmountMode;
+use Lalalili\Discount\Contexts\CouponContext;
+use Lalalili\Discount\Engines\DefaultCouponDiscountEngine;
+use Lalalili\Discount\Enums\CouponAmountMode;
 
 $engine = new DefaultCouponDiscountEngine();
 
@@ -294,10 +294,10 @@ $rate = $engine->discount(
 ### Coupon application service (member / promotion)
 
 ```php
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\UserContext;
-use Discount\Kernel\Contracts\CouponApplicationServiceInterface;
-use Discount\Kernel\Enums\CouponKind;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\UserContext;
+use Lalalili\Discount\Contracts\CouponApplicationServiceInterface;
+use Lalalili\Discount\Enums\CouponKind;
 
 $service = app(CouponApplicationServiceInterface::class);
 
@@ -324,8 +324,8 @@ $discount = $result->discount;
 ### Coupon code generation
 
 ```php
-use Discount\Kernel\Contexts\CodeContext;
-use Discount\Kernel\Engines\DefaultCouponCodeGenerator;
+use Lalalili\Discount\Contexts\CodeContext;
+use Lalalili\Discount\Engines\DefaultCouponCodeGenerator;
 
 $engine = new DefaultCouponCodeGenerator();
 
@@ -340,10 +340,10 @@ $code = $engine->generate(new CodeContext(
 ### Cart adjustment generation
 
 ```php
-use Discount\Kernel\Contexts\CartContext;
-use Discount\Kernel\Contexts\PromotionContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\Engines\DefaultCartPromotionEngine;
+use Lalalili\Discount\Contexts\CartContext;
+use Lalalili\Discount\Contexts\PromotionContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\Engines\DefaultCartPromotionEngine;
 
 $engine = new DefaultCartPromotionEngine();
 

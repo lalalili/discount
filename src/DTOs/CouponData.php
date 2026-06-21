@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Discount\Kernel\DTOs;
+namespace Lalalili\Discount\DTOs;
 
-use Discount\Kernel\Enums\CouponAmountMode;
-use Discount\Kernel\Enums\CouponKind;
+use Lalalili\Discount\Enums\CouponAmountMode;
+use Lalalili\Discount\Enums\CouponKind;
 
 final class CouponData
 {

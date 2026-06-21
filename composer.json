@@ -15,18 +15,18 @@
     },
     "autoload": {
         "psr-4": {
-            "Discount\\Kernel\\": "src/"
+            "Lalalili\\Discount\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Discount\\Kernel\\Tests\\": "tests/"
+            "Lalalili\\Discount\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Discount\\Kernel\\DiscountServiceProvider"
+                "Lalalili\\Discount\\DiscountServiceProvider"
             ]
         }
     },

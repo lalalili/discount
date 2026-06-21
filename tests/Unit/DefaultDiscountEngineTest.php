@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/Pest.php';
 
-use Discount\Kernel\Contexts\ProductContext;
-use Discount\Kernel\Contexts\PromotionContext;
-use Discount\Kernel\Contexts\PromotionSet;
-use Discount\Kernel\Engines\DefaultDiscountEngine;
+use Lalalili\Discount\Contexts\ProductContext;
+use Lalalili\Discount\Contexts\PromotionContext;
+use Lalalili\Discount\Contexts\PromotionSet;
+use Lalalili\Discount\Engines\DefaultDiscountEngine;
 
 it('uses exclusive price before other discounts', function (): void {
     $engine = new DefaultDiscountEngine();
