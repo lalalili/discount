@@ -2,6 +2,22 @@
 
 All notable changes to `lalalili/discount` are documented in this file.
 
+## [3.0.0] - 2026-06-22
+
+### Changed (BREAKING)
+
+- 套件 root namespace 由 `Discount\Kernel` 改名為 `Lalalili\Discount`。
+
+  **Migration**：host 端所有 `use Discount\Kernel\...` 匯入需改為 `use Lalalili\Discount\...`；設定檔、container binding、type-hint 與 `class-string` 參照一併更新。無公開 API 方法簽章或行為變更，僅命名空間搬遷。
+
+- 移除 Composer 寫死的 `version` 欄位，版本改由 tag 驅動；並新增 CI / release workflow。
+
+## [2.5.3] - 2026-06-21
+
+### Added
+
+- 新增促銷刷新指紋工具（promotion refresh fingerprint），供 app adapter 偵測促銷設定變更以決定是否需重新計價。
+
 ## [2.5.2] - 2026-05-11
 
 ### Added
