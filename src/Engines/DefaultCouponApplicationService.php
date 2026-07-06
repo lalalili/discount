@@ -63,7 +63,7 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
             }
         }
 
-        if ($kind === CouponKind::Promotion) {
+        if ($kind === CouponKind::Promotion || $kind === CouponKind::FreeShipping) {
             if ($user->userId === null) {
                 return new CouponValidationResult(
                     eligible: false,
@@ -137,6 +137,43 @@ final class DefaultCouponApplicationService implements CouponApplicationServiceI
                     coupon: $coupon,
                     reason: $eligibility->reason,
                     reasonCode: $reasonCode,
+                ),
+            );
+        }
+
+        // 免運券:全額折抵當筆運費(host 經 cart meta.shipping_fee 傳入);
+        // 已符合免運資格(運費 0)時擋下不可用,不走一般面額折抵引擎
+        if ($kind === CouponKind::FreeShipping) {
+            $shippingFee = (float) ($cart->meta['shipping_fee'] ?? 0);
+
+            if ($shippingFee <= 0) {
+                return new CouponValidationResult(
+                    eligible: false,
+                    reason: '目前訂單已符合免運資格，無需使用免運券。',
+                    reasonCode: 'FREE_SHIPPING_NOT_APPLICABLE',
+                    pricingTrace: $this->couponValidationTrace(
+                        kind: $kind,
+                        code: $code,
+                        status: 'skipped',
+                        coupon: $coupon,
+                        reason: '目前訂單已符合免運資格，無需使用免運券。',
+                        reasonCode: 'FREE_SHIPPING_NOT_APPLICABLE',
+                    ),
+                );
+            }
+
+            return new CouponValidationResult(
+                eligible: true,
+                coupon: $coupon,
+                discount: $shippingFee,
+                finalTotal: max(0.0, $cart->orderTotal - $shippingFee),
+                pricingTrace: $this->couponValidationTrace(
+                    kind: $kind,
+                    code: $code,
+                    status: 'applied',
+                    coupon: $coupon,
+                    amount: $shippingFee,
+                    finalTotal: max(0.0, $cart->orderTotal - $shippingFee),
                 ),
             );
         }

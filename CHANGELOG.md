@@ -2,6 +2,20 @@
 
 All notable changes to `lalalili/discount` are documented in this file.
 
+## [3.4.0] - 2026-07-07
+
+### Added
+
+- **免運門檻券 `CouponKind::FreeShipping`**:
+  - 折抵語意:全額折抵當筆運費(host 經 `CartContext` `meta['shipping_fee']` 傳入,
+    引擎不涉運費計算);已符合免運資格(運費 0)時擋下不可用
+    (新 reasonCode `FREE_SHIPPING_NOT_APPLICABLE`),券不消耗
+  - 驗證規則比照 Promotion(登入、每人一次、發行量庫存),scope/門檻沿用
+    eligibility 機制;可與 Member/Promotion 券並用(一單最多三券)
+  - condition payload:`type=shipping_coupon`、`target=subtotal`(緊跟 host
+    shipping_fee condition 之後)、order 由 config
+    `ordering.coupon.free_shipping`(預設 2)決定
+
 ## [3.3.0] - 2026-07-07
 
 ### Added

@@ -111,6 +111,9 @@ return [
         'coupon' => [
             'member'    => 10,
             'promotion' => 11,
+            // 免運券為 target=subtotal(緊跟 host shipping_fee condition 之後),
+            // 與 total 層 coupon 排序空間分離
+            'free_shipping' => 2,
         ],
         'rebate' => [
             'strategy' => 'first',
