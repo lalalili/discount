@@ -10,8 +10,16 @@ use Lalalili\Discount\Enums\CouponKind;
 
 final class CouponConditionPayloadFactory
 {
+    /**
+     * @deprecated v4 移除;order 改由 config `discount.ordering.coupon.member` 決定,
+     *             常數僅作 config 未設定時的 fallback。
+     */
     public const MEMBER_COUPON_CONDITION_ORDER = 10;
 
+    /**
+     * @deprecated v4 移除;order 改由 config `discount.ordering.coupon.promotion` 決定,
+     *             常數僅作 config 未設定時的 fallback。
+     */
     public const PROMOTION_COUPON_CONDITION_ORDER = 11;
 
     public function make(CouponKind $kind, int|float $discount, PricingTraceEntry $pricingTraceEntry): CouponConditionPayload
@@ -35,7 +43,7 @@ final class CouponConditionPayloadFactory
     public function orderFor(CouponKind $kind): int
     {
         return $kind === CouponKind::Member
-            ? self::MEMBER_COUPON_CONDITION_ORDER
-            : self::PROMOTION_COUPON_CONDITION_ORDER;
+            ? (int) DiscountConfig::get('ordering.coupon.member', self::MEMBER_COUPON_CONDITION_ORDER)
+            : (int) DiscountConfig::get('ordering.coupon.promotion', self::PROMOTION_COUPON_CONDITION_ORDER);
     }
 }

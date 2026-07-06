@@ -34,15 +34,19 @@ final class DefaultCartPromotionEngine implements CartPromotionEngineInterface
             if ($selectedGroupRebate instanceof PromotionContext) {
                 $adjustments[] = $this->buildGroupRebateDiscount($selectedGroupRebate);
 
-                foreach ($promotionItems as $promotion) {
-                    if (! $this->isGiftType($promotion->type)) {
-                        continue;
-                    }
+                // 排他(團購)選中時是否仍保留贈品:config ordering.exclusive.gift_coexists
+                // (預設 true = 既有隱規則顯式化)
+                if ((bool) DiscountConfig::get('ordering.exclusive.gift_coexists', true)) {
+                    foreach ($promotionItems as $promotion) {
+                        if (! $this->isGiftType($promotion->type)) {
+                            continue;
+                        }
 
-                    $giftAdjustment = $this->buildGiftAdjustment($promotion);
+                        $giftAdjustment = $this->buildGiftAdjustment($promotion);
 
-                    if ($giftAdjustment !== null) {
-                        $adjustments[] = $giftAdjustment;
+                        if ($giftAdjustment !== null) {
+                            $adjustments[] = $giftAdjustment;
+                        }
                     }
                 }
 

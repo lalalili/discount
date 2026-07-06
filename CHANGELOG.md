@@ -2,6 +2,31 @@
 
 All notable changes to `lalalili/discount` are documented in this file.
 
+## [3.3.0] - 2026-07-07
+
+### Added
+
+- **順序組合配置模型 `discount.ordering`**:
+  - `layers`:total 層 slot 區間宣告(promotion 1–9 + legacy、coupon 10–19、shipping 20–29)
+  - `coupon.member / coupon.promotion`:coupon condition order 改由 config 決定
+    (`CouponConditionPayloadFactory` 常數標記 deprecated,僅作 fallback)
+  - `rebate.strategy`(first|max|all,預設 first):**多滿額折裁決下沉引擎**——
+    原本 host 端「只套第一個、丟棄不留痕」;現由 `buildRebateCartAdjustments`
+    依策略裁決,被棄者記入 skippedPromotions(新 reason
+    `rebate_strategy_dropped`,附 strategy/winning_event_id/dropped_amount),
+    PromotionDecision/PricingTrace 可解釋「為何此滿額折沒生效」
+  - `exclusive.gift_coexists`(預設 true):團購/排他選中時保留贈品的隱規則顯式化
+- `DiscountConfig::validateOrdering()`:per-target 順序守衛(coupon order 落在
+  layer 區間、不與 total 層 promotion type_order 相撞),回傳警告清單供 host
+  architecture 測試落地。
+- `PromotionDecisionReason::REBATE_STRATEGY_DROPPED`。
+
+### 升級指引
+
+- 預設 config 下行為與「引擎輸出全部 rebate + host 只套第一個」的組合完全等價;
+  host 升級後應**移除自身的 `$rebateApplied` 只套第一個迴圈**,改為套用引擎輸出的
+  全部 rebate adjustments(引擎已裁決)。
+
 ## [3.2.0] - 2026-07-07
 
 ### Changed(效能,行為不變)

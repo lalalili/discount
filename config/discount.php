@@ -87,6 +87,41 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | 折扣順序組合(Ordering)
+    |--------------------------------------------------------------------------
+    | total 層 cart condition 依 order 升冪套用。layers 宣告各類條件的 slot 區間
+    | (供 DiscountConfig::validateOrdering() 守衛與文件化,legacy_allow 為
+    | type_order 中歷史上超出 promotion 區間的值);coupon 的 order 由此 config
+    | 決定(取代 CouponConditionPayloadFactory 的寫死常數)。
+    |
+    | rebate.strategy:多個滿額折同時達標時的裁決策略
+    |   - first(預設):取排序後第一個(等同既有 host 行為);其餘記入
+    |     skippedPromotions(reason=rebate_strategy_dropped),trace 可解釋
+    |   - max:取折抵金額最大者
+    |   - all:全部套用
+    |
+    | exclusive.gift_coexists:團購/排他折扣選中時是否仍保留贈品(既有隱規則顯式化)
+    */
+    'ordering' => [
+        'layers' => [
+            'promotion' => ['range' => [1, 9], 'legacy_allow' => [20, 21, 99]],
+            'coupon'    => ['range' => [10, 19]],
+            'shipping'  => ['range' => [20, 29]],
+        ],
+        'coupon' => [
+            'member'    => 10,
+            'promotion' => 11,
+        ],
+        'rebate' => [
+            'strategy' => 'first',
+        ],
+        'exclusive' => [
+            'gift_coexists' => true,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | 金額收斂政策(Rounding Policy)
     |--------------------------------------------------------------------------
     | null = 維持既有行為(unit_price 不收斂;coupon Rate 裸 round、Fixed 不收斂)。

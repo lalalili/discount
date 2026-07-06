@@ -11,6 +11,7 @@ final class PromotionDecisionReason
     public const string GIFT_UNRESOLVED = 'gift_unresolved';
     public const string GIFT_OUT_OF_STOCK = 'gift_out_of_stock';
     public const string NOT_SELECTED = 'not_selected';
+    public const string REBATE_STRATEGY_DROPPED = 'rebate_strategy_dropped';
 
     /**
      * @return list<string>
@@ -23,6 +24,7 @@ final class PromotionDecisionReason
             self::GIFT_UNRESOLVED,
             self::GIFT_OUT_OF_STOCK,
             self::NOT_SELECTED,
+            self::REBATE_STRATEGY_DROPPED,
         ];
     }
 
@@ -35,7 +37,8 @@ final class PromotionDecisionReason
             self::EXCLUSIVE_CONFLICT,
             self::GIFT_UNRESOLVED,
             self::GIFT_OUT_OF_STOCK,
-            self::NOT_SELECTED => $reason,
+            self::NOT_SELECTED,
+            self::REBATE_STRATEGY_DROPPED => $reason,
             'cart_rebate_threshold_not_met',
             'gift_threshold_not_met',
             'group_rebate_threshold_not_met' => self::THRESHOLD_NOT_MET,

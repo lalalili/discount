@@ -436,7 +436,7 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
     {
         usort($rebates, static fn (array $first, array $second): int => (int) $first['sort'] <=> (int) $second['sort']);
 
-        $adjustments = [];
+        $eligible = [];
         foreach ($rebates as $rebate) {
             $attributes = is_array($rebate['attributes'] ?? null) ? $rebate['attributes'] : [];
             $triggerAmount = (float) ($attributes['rebate_trigger_amount'] ?? 0);
@@ -455,17 +455,68 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             $attributes['sum_quantity'] = $rebate['sum_quantity'];
             $attributes['products'] = $rebate['products'];
 
-            $adjustments[] = [
-                'name'       => (string) $rebate['name'],
-                'type'       => 'rebate',
-                'target'     => 'total',
-                'value'      => '-' . $this->formatNumber($rebateAmount),
-                'order'      => $this->resolveTypeOrder($this->nullableInt($attributes['type'] ?? null) ?? (int) $rebate['order']),
-                'attributes' => $attributes,
+            $eligible[] = [
+                'amount' => $rebateAmount,
+                'source' => $rebate,
+                'adjustment' => [
+                    'name'       => (string) $rebate['name'],
+                    'type'       => 'rebate',
+                    'target'     => 'total',
+                    'value'      => '-' . $this->formatNumber($rebateAmount),
+                    'order'      => $this->resolveTypeOrder($this->nullableInt($attributes['type'] ?? null) ?? (int) $rebate['order']),
+                    'attributes' => $attributes,
+                ],
             ];
         }
 
-        return $adjustments;
+        return $this->applyRebateStrategy($eligible, $skippedPromotions);
+    }
+
+    /**
+     * 多個滿額折同時達標時依 config `ordering.rebate.strategy` 裁決:
+     * first(預設,等同既有 host「只套第一個」行為)/ max(折抵最大)/ all(全套)。
+     * 被裁掉的 rebate 記入 skippedPromotions(reason=rebate_strategy_dropped,
+     * 附勝出 event 與被棄金額),trace 可解釋「為何此滿額折沒生效」。
+     *
+     * @param list<array{amount: float, source: array<string, mixed>, adjustment: array{name:string,type:'rebate',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}}> $eligible
+     * @param list<array<string, mixed>> $skippedPromotions
+     * @return list<array{name:string,type:'rebate',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}>
+     */
+    private function applyRebateStrategy(array $eligible, array &$skippedPromotions): array
+    {
+        $strategy = DiscountConfig::get('ordering.rebate.strategy', 'first');
+
+        if ($strategy === 'all' || count($eligible) <= 1) {
+            return array_column($eligible, 'adjustment');
+        }
+
+        $winnerIndex = 0;
+
+        if ($strategy === 'max') {
+            foreach ($eligible as $index => $candidate) {
+                if ($candidate['amount'] > $eligible[$winnerIndex]['amount']) {
+                    $winnerIndex = $index;
+                }
+            }
+        }
+
+        $winner = $eligible[$winnerIndex];
+        $winningEventId = $this->nullableInt($winner['adjustment']['attributes']['event_id'] ?? null);
+
+        foreach ($eligible as $index => $candidate) {
+            if ($index === $winnerIndex) {
+                continue;
+            }
+
+            $dropped = $this->cartSkippedPromotion($candidate['source'], PromotionDecisionReason::REBATE_STRATEGY_DROPPED);
+            $dropped['strategy'] = is_string($strategy) ? $strategy : 'first';
+            $dropped['winning_event_id'] = $winningEventId;
+            $dropped['dropped_amount'] = $candidate['amount'];
+
+            $skippedPromotions[] = $dropped;
+        }
+
+        return [$winner['adjustment']];
     }
 
     /**
