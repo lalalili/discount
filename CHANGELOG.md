@@ -2,6 +2,18 @@
 
 All notable changes to `lalalili/discount` are documented in this file.
 
+## [3.1.0] - 2026-07-06
+
+### Added
+
+- 新增 config 驅動的 `Support\RoundingPolicy`(`discount.rounding.*`),規則格式與
+  lalalili/laravelshoppingcart 一致(int 精度或 `['precision','mode']`,mode 支援
+  `half_up|half_down|half_even|half_odd|floor|ceil`)。
+- `DefaultCouponDiscountEngine`:設定 `rounding.coupon_discount` 後 Fixed/Rate 折抵額一致收斂;
+  **未設定時維持原行為**(Rate 裸 `round()` 取整、Fixed 不收斂),向後相容。
+- `DefaultDiscountEngine`:設定 `rounding.unit_price` 後每一步折扣計算完立即收斂
+  (含 stackable 疊加每一層);未設定時維持原 float 行為。
+
 ## [3.0.0] - 2026-06-22
 
 ### Changed (BREAKING)

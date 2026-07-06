@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'lalalili/discount',
-        'pretty_version' => 'dev-main',
-        'version' => 'dev-main',
-        'reference' => '8d8ccaf9059223df162d21f8f2dc193b7811d48d',
+        'pretty_version' => '1.0.0+no-version-set',
+        'version' => '1.0.0.0',
+        'reference' => null,
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -299,9 +299,9 @@
             'dev_requirement' => true,
         ),
         'lalalili/discount' => array(
-            'pretty_version' => 'dev-main',
-            'version' => 'dev-main',
-            'reference' => '8d8ccaf9059223df162d21f8f2dc193b7811d48d',
+            'pretty_version' => '1.0.0+no-version-set',
+            'version' => '1.0.0.0',
+            'reference' => null,
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

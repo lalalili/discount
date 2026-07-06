@@ -10,6 +10,7 @@ use Lalalili\Discount\Contexts\PromotionSet;
 use Lalalili\Discount\Contracts\DiscountEngineInterface;
 use Lalalili\Discount\DTOs\PriceResult;
 use Lalalili\Discount\Support\DiscountConfig;
+use Lalalili\Discount\Support\RoundingPolicy;
 
 final class DefaultDiscountEngine implements DiscountEngineInterface
 {
@@ -165,6 +166,10 @@ final class DefaultDiscountEngine implements DiscountEngineInterface
         return $promotions;
     }
 
+    /**
+     * 設定 `discount.rounding.unit_price` 時,每一步折扣計算完立即收斂
+     * (含 stackable 疊加的每一層);未設定時維持原 float 行為。
+     */
     private function applyDiscountValue(float $price, float|int|null $value): float
     {
         if ($value === null) {
@@ -176,10 +181,8 @@ final class DefaultDiscountEngine implements DiscountEngineInterface
             return $price;
         }
 
-        if ($numeric < 1) {
-            return $price * $numeric;
-        }
+        $discounted = $numeric < 1 ? $price * $numeric : $price - $numeric;
 
-        return $price - $numeric;
+        return RoundingPolicy::apply($discounted, 'unit_price');
     }
 }

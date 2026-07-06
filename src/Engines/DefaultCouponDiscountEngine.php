@@ -8,6 +8,7 @@ use Lalalili\Discount\Contexts\CouponContext;
 use Lalalili\Discount\Contracts\CouponDiscountEngineInterface;
 use Lalalili\Discount\DTOs\CouponDiscountResult;
 use Lalalili\Discount\Enums\CouponAmountMode;
+use Lalalili\Discount\Support\RoundingPolicy;
 
 final class DefaultCouponDiscountEngine implements CouponDiscountEngineInterface
 {
@@ -25,11 +26,11 @@ final class DefaultCouponDiscountEngine implements CouponDiscountEngineInterface
         $mode = $this->resolveAmountMode($coupon->amountMode, $amount);
 
         $discount = match ($mode) {
-            CouponAmountMode::Fixed => $amount,
-            CouponAmountMode::Rate  => round($orderTotal * (1 - $amount)),
+            CouponAmountMode::Fixed => $this->convergeDiscount($amount, isRate: false),
+            CouponAmountMode::Rate  => $this->convergeDiscount($orderTotal * (1 - $amount), isRate: true),
             CouponAmountMode::Auto  => $amount > 0 && $amount < 1
-                ? round($orderTotal * (1 - $amount))
-                : $amount,
+                ? $this->convergeDiscount($orderTotal * (1 - $amount), isRate: true)
+                : $this->convergeDiscount($amount, isRate: false),
         };
 
         if ($discount <= 0 || $discount >= $orderTotal) {
@@ -45,6 +46,19 @@ final class DefaultCouponDiscountEngine implements CouponDiscountEngineInterface
             discount: (float) $discount,
             finalTotal: max(0, $orderTotal - (float) $discount),
         );
+    }
+
+    /**
+     * 折抵額收斂:設定 `discount.rounding.coupon_discount` 時統一走 policy
+     * (Fixed/Rate 一致);未設定時維持原行為(Rate 裸 round 取整、Fixed 不收斂)。
+     */
+    private function convergeDiscount(float $discount, bool $isRate): float
+    {
+        if (RoundingPolicy::hasRule('coupon_discount')) {
+            return RoundingPolicy::apply($discount, 'coupon_discount');
+        }
+
+        return $isRate ? round($discount) : $discount;
     }
 
     private function resolveAmountMode(CouponAmountMode|string|null $amountMode, float $amount): CouponAmountMode

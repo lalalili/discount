@@ -78,4 +78,21 @@ return [
         ],
         'gift_resolver' => null,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 金額收斂政策(Rounding Policy)
+    |--------------------------------------------------------------------------
+    | null = 維持既有行為(unit_price 不收斂;coupon Rate 裸 round、Fixed 不收斂)。
+    | 規則格式:int(round 精度)或 ['precision' => int, 'mode' => string],
+    | mode 支援 'half_up'|'half_down'|'half_even'|'half_odd'|'floor'|'ceil'。
+    |
+    | 建議整數幣別(TWD)政策:
+    |   'unit_price'      => ['precision' => 0, 'mode' => 'floor'],
+    |   'coupon_discount' => ['precision' => 0, 'mode' => 'half_up'],
+    */
+    'rounding' => [
+        'unit_price'      => null,
+        'coupon_discount' => null,
+    ],
 ];
