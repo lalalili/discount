@@ -60,17 +60,21 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             );
         }
 
+        // 每 line 折後金額只算一次,供 buildCartAdjustments 與 buildTotals 共用
+        $lineNetAmounts = $this->lineNetAmounts($input->lines, $itemAdjustmentsByLineId);
+
         $cartAdjustments = $this->buildCartAdjustments(
             $input->lines,
             $itemAdjustmentsByLineId,
             $input->giftFulfillment,
             $skippedPromotions,
+            $lineNetAmounts,
         );
         $appliedPromotions = array_merge(
             $appliedPromotions,
             $this->appliedPromotionsForCart($cartAdjustments),
         );
-        $totals = $this->buildTotals($input->lines, $itemAdjustmentsByLineId, $cartAdjustments);
+        $totals = $this->buildTotals($input->lines, $cartAdjustments, $lineNetAmounts);
 
         return new CartPromotionRefreshResult(
             itemAdjustmentsByLineId: $itemAdjustmentsByLineId,
@@ -149,19 +153,28 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
         );
 
         $eventIdsByProductId = [];
-        $quantitiesByProductId = [];
+        $quantitySum = 0;
         foreach ($rebateTriggerItems as $productId => $item) {
             $eventIdsByProductId[$productId] = $item['event_ids'];
-            $quantitiesByProductId[$productId] = (int) $item['quantity'];
+            $quantitySum += (int) $item['quantity'];
         }
 
+        // 交集與數量總和以 dirty-flag 增量維護:集合縮減(unset)才重算,
+        // 一般路徑整段選擇迴圈只算一次交集(counting 版,O(L×E))。
         $selected = [];
+        $sharedEventIds = $this->intersectEventIds($eventIdsByProductId);
+        $intersectionDirty = false;
+
         foreach ($rebateTriggerItems as $productId => $item) {
-            $sharedEventIds = $this->intersectEventIds($eventIdsByProductId);
+            if ($intersectionDirty) {
+                $sharedEventIds = $this->intersectEventIds($eventIdsByProductId);
+                $intersectionDirty = false;
+            }
+
             $groupEvent = $this->firstSharedGroupPromotion(
                 $item['promotions'],
                 $sharedEventIds,
-                array_sum($quantitiesByProductId),
+                $quantitySum,
             );
 
             $meet = $item['meet'];
@@ -171,7 +184,9 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
                 if ($groupEvent instanceof PromotionContext && $this->promotionSort($groupEvent) < $this->promotionSort($meet)) {
                     $eventId = $groupEvent->eventId;
                 } elseif ($groupEvent instanceof PromotionContext && $eventId !== $groupEvent->eventId) {
-                    unset($eventIdsByProductId[$productId], $quantitiesByProductId[$productId]);
+                    unset($eventIdsByProductId[$productId]);
+                    $quantitySum -= (int) $item['quantity'];
+                    $intersectionDirty = true;
                 }
             } else {
                 $eventId = $groupEvent?->eventId;
@@ -219,23 +234,42 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
     }
 
     /**
+     * counting 版跨集合交集(O(總 id 數),取代逐對 array_intersect):
+     * 以「出現於幾個集合」計數,保留第一個集合的元素順序(與 array_intersect 語意一致)。
+     *
      * @param array<int|string, list<int>> $eventIdsByProductId
      * @return list<int>
      */
     private function intersectEventIds(array $eventIdsByProductId): array
     {
         $eventIdSets = array_values($eventIdsByProductId);
-        $intersection = array_shift($eventIdSets);
+        $first = array_shift($eventIdSets);
 
-        if ($intersection === null) {
+        if ($first === null) {
             return [];
         }
 
-        foreach ($eventIdSets as $eventIds) {
-            $intersection = array_values(array_intersect($intersection, $eventIds));
+        if ($eventIdSets === []) {
+            return array_map(static fn (int|string $eventId): int => (int) $eventId, $first);
         }
 
-        return array_map(static fn (int|string $eventId): int => (int) $eventId, $intersection);
+        $presenceCounts = [];
+        foreach ($eventIdSets as $eventIds) {
+            foreach (array_unique($eventIds) as $eventId) {
+                $presenceCounts[$eventId] = ($presenceCounts[$eventId] ?? 0) + 1;
+            }
+        }
+
+        $requiredCount = count($eventIdSets);
+        $intersection = [];
+
+        foreach ($first as $eventId) {
+            if (($presenceCounts[$eventId] ?? 0) === $requiredCount) {
+                $intersection[] = (int) $eventId;
+            }
+        }
+
+        return $intersection;
     }
 
     /**
@@ -307,6 +341,7 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
      * @param list<CartLineContext> $lines
      * @param array<int|string, list<array<string, mixed>>> $itemAdjustmentsByLineId
      * @param list<array<string, mixed>> $skippedPromotions
+     * @param array<int|string, float> $lineNetAmounts
      * @return list<array{name:string,type:'rebate'|'gift',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}>
      */
     private function buildCartAdjustments(
@@ -314,6 +349,7 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
         array $itemAdjustmentsByLineId,
         string $giftFulfillment,
         array &$skippedPromotions,
+        array $lineNetAmounts,
     ): array {
         $linesById = [];
         foreach ($lines as $line) {
@@ -329,7 +365,7 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
                 continue;
             }
 
-            $lineAmount = $this->lineAmountWithDiscounts($line, $adjustments);
+            $lineAmount = $lineNetAmounts[$lineId] ?? $this->lineAmountWithDiscounts($line, $adjustments);
 
             foreach ($adjustments as $adjustment) {
                 $type = (string) ($adjustment['type'] ?? '');
@@ -620,10 +656,26 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
     /**
      * @param list<CartLineContext> $lines
      * @param array<int|string, list<array<string, mixed>>> $itemAdjustmentsByLineId
+     * @return array<int|string, float> line id → 折後金額(unitPrice 套 item 折扣 × 數量)
+     */
+    private function lineNetAmounts(array $lines, array $itemAdjustmentsByLineId): array
+    {
+        $amounts = [];
+
+        foreach ($lines as $line) {
+            $amounts[$line->id] = $this->lineAmountWithDiscounts($line, $itemAdjustmentsByLineId[$line->id] ?? []);
+        }
+
+        return $amounts;
+    }
+
+    /**
+     * @param list<CartLineContext> $lines
      * @param list<array{name:string,type:'rebate'|'gift',target:'total',value:string|float|int,order:int,attributes:array<string, mixed>}> $cartAdjustments
+     * @param array<int|string, float> $lineNetAmounts
      * @return array<string, mixed>
      */
-    private function buildTotals(array $lines, array $itemAdjustmentsByLineId, array $cartAdjustments): array
+    private function buildTotals(array $lines, array $cartAdjustments, array $lineNetAmounts): array
     {
         $lineTotals = [];
         $subtotalBefore = 0.0;
@@ -631,7 +683,7 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
 
         foreach ($lines as $line) {
             $lineSubtotalBefore = $line->unitPrice * $line->quantity;
-            $lineSubtotalAfter = $this->lineAmountWithDiscounts($line, $itemAdjustmentsByLineId[$line->id] ?? []);
+            $lineSubtotalAfter = $lineNetAmounts[$line->id] ?? ($line->unitPrice * $line->quantity);
 
             $subtotalBefore += $lineSubtotalBefore;
             $subtotalAfterItemAdjustments += $lineSubtotalAfter;

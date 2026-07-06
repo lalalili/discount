@@ -2,6 +2,22 @@
 
 All notable changes to `lalalili/discount` are documented in this file.
 
+## [3.2.0] - 2026-07-07
+
+### Changed(效能,行為不變)
+
+- `DefaultCartPromotionRefreshService` 團購跨商品選擇:`intersectEventIds` 改為 counting
+  交集(O(總 id 數)),選擇迴圈的交集與數量總和改 dirty-flag 增量維護——集合未縮減時
+  整段只算一次交集,複雜度由近似 O(L²×E) 降為 O(L×E)。行為等價性由
+  `GroupRebateSelectionLockTest`(sort tie、unset 縮減、混合選擇圖三案)逐鍵鎖定。
+- 每 line 折後金額抽出 `lineNetAmounts()` 一次計算,`buildCartAdjustments` 與
+  `buildTotals` 共用,消除同一 line 的重複計算。
+
+### Docs
+
+- `config/discount.php` 的 `coupon.scope_map` 補跨 host 語意對照註解
+  (aitehub 將 book 重載為 COURSE)。
+
 ## [3.1.0] - 2026-07-06
 
 ### Added

@@ -34,6 +34,12 @@ return [
         ],
     ],
     'coupon' => [
+        /*
+         * scope 邏輯名稱 → host enum 值。注意:邏輯名稱的「商品類別語意」由 host 定義,
+         * 跨 host 不可直接搬設定——cptw 的 book(1) 指實體書,aitehub 將 book(1)
+         * 重載為 COURSE(課程)。eligibility 引擎只認邏輯名稱(all/book/ebook/
+         * specific_products),對應的購物車小計由 host CartContext 提供。
+         */
         'scope_map' => [
             'all'               => 0,
             'book'              => 1,
