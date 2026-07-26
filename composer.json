@@ -2,7 +2,7 @@
     "name": "lalalili/discount",
     "description": "Config-driven discount and coupon kernel for Laravel projects.",
     "type": "library",
-    "license": "proprietary",
+    "license": "MIT",
     "require": {
         "php": "^8.3",
         "illuminate/support": "^12.0|^13.0"
