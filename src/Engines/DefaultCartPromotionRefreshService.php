@@ -456,8 +456,8 @@ final class DefaultCartPromotionRefreshService implements CartPromotionRefreshSe
             $attributes['products'] = $rebate['products'];
 
             $eligible[] = [
-                'amount' => $rebateAmount,
-                'source' => $rebate,
+                'amount'     => $rebateAmount,
+                'source'     => $rebate,
                 'adjustment' => [
                     'name'       => (string) $rebate['name'],
                     'type'       => 'rebate',

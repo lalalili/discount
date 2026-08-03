@@ -13,3 +13,5 @@ jobs:
   release:
     uses: lalalili/.github/.github/workflows/php-package-release.yml@main
     secrets: inherit
+    with:
+      run-format: true
