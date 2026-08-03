@@ -165,6 +165,8 @@ function resetDiscountConfig(): void
     StandaloneConfig::reset();
 }
 
+pest()->tia()->locally();
+
 beforeEach(function (): void {
     resetDiscountConfig();
 });
